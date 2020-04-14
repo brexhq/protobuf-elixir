@@ -475,4 +475,76 @@ defmodule Protobuf.Protoc.Generator.MessageTest do
     assert msg =~ "field :d, 4, optional: true, type: :int32, oneof: 1\n"
     assert msg =~ "field :other, 4, optional: true, type: :int32\n"
   end
+
+  test "generate/2 supports custom field options" do
+    ctx = %Protobuf.Protoc.Context{
+      dep_type_mapping: %{
+        ".brex.elixirpb.FieldOptions" => %{type_name: "Brex.Elixirpb.FieldOptions"},
+        ".ext.DualUseCase" => %{type_name: "Ext.DualUseCase"},
+        ".google.protobuf.StringValue" => %{type_name: "Google.Protobuf.StringValue"}
+      },
+      package: "ext",
+    }
+
+    desc = %Google.Protobuf.DescriptorProto{
+      enum_type: [],
+      extension: [],
+      extension_range: [],
+      field: [
+        %Google.Protobuf.FieldDescriptorProto{
+          default_value: nil,
+          extendee: nil,
+          json_name: "with",
+          label: :LABEL_OPTIONAL,
+          name: "with",
+          number: 1,
+          oneof_index: nil,
+          options: %Google.Protobuf.FieldOptions{
+            __pb_extensions__: %{
+              {Brex.Elixirpb.PbExtension, :field} => %Brex.Elixirpb.FieldOptions{
+                extype: "String.t"
+              }
+            },
+            ctype: :STRING,
+            deprecated: false,
+            jstype: :JS_NORMAL,
+            lazy: false,
+            packed: nil,
+            uninterpreted_option: [],
+            weak: false
+          },
+          type: :TYPE_MESSAGE,
+          type_name: ".google.protobuf.StringValue"
+        },
+        %Google.Protobuf.FieldDescriptorProto{
+          default_value: nil,
+          extendee: nil,
+          json_name: "without",
+          label: :LABEL_OPTIONAL,
+          name: "without",
+          number: 2,
+          oneof_index: nil,
+          options: nil,
+          type: :TYPE_MESSAGE,
+          type_name: ".google.protobuf.StringValue"
+        }
+      ],
+      name: "DualUseCase",
+      nested_type: [],
+      oneof_decl: [],
+      options: nil,
+      reserved_name: [],
+      reserved_range: []
+    }
+
+    {[], [msg]} = Generator.generate(ctx, desc)
+
+    assert msg =~ "@type t :: %__MODULE__{\n    with:    String.t | nil,\n    without: Google.Protobuf.StringValue.t | nil\n  }"
+
+    assert msg =~ "defstruct [:with, :without]"
+
+    assert msg =~ "field :with, 1, optional: true, type: Google.Protobuf.StringValue, options: [extype: \"String.t\"]"
+
+    assert msg =~ "field :without, 2, optional: true, type: Google.Protobuf.StringValue\n\nend\n"
+  end
 end

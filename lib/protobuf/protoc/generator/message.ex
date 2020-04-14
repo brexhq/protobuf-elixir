@@ -148,6 +148,10 @@ defmodule Protobuf.Protoc.Generator.Message do
     String.pad_trailing("#{name}:", len + 1)
   end
 
+  defp fmt_type(%{opts: %{options: options}} = f) when not is_nil(options) do
+    Protobuf.CustomOptions.fmt_type(f, options)
+  end
+
   defp fmt_type(%{opts: %{map: true}, map: {{k_type, k_name}, {v_type, v_name}}}) do
     k_type = type_to_spec(k_type, k_name)
     v_type = type_to_spec(v_type, v_name)

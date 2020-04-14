@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ext;
+
+import "brex_elixirpb.proto";
+import "google/protobuf/wrappers.proto";
+
+message DualUseCase {
+  google.protobuf.StringValue with = 1 [(brex.elixirpb.field).extype="String.t"];
+  google.protobuf.StringValue without = 2;
+}

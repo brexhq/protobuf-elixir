@@ -34,6 +34,7 @@ defmodule Protobuf.Protoc.Generator.Util do
   def type_from_type_name(ctx, type_name) do
     # The doc says there's a situation where type_name begins without a `.`, but I never got that.
     # Handle that later.
+    ctx.dep_type_mapping
     metadata =
       ctx.dep_type_mapping[type_name] ||
         raise "There's something wrong to get #{type_name}'s type, please contact with the lib author."

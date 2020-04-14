@@ -192,7 +192,8 @@ defmodule Protobuf.EncoderTest.Validation do
 
   test "empty with extension" do
     # Is this what we want?
-    assert %TestMsg.Ext.DualUseCase{with: nil, without: nil} == TestMsg.Ext.DualUseCase.new()
+    msg = TestMsg.Ext.DualUseCase.new()
+    assert %TestMsg.Ext.DualUseCase{with: nil, without: nil} == msg
 
     assert msg ==
              msg |> Protobuf.Encoder.encode() |> Protobuf.Decoder.decode(TestMsg.Ext.DualUseCase)
