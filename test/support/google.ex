@@ -60,3 +60,15 @@ defmodule Google.Protobuf.NullValue do
 
   field :NULL_VALUE, 0
 end
+
+defmodule Google.Protobuf.StringValue do
+  @moduledoc false
+  use Protobuf, syntax: :proto3
+
+  @type t :: %__MODULE__{
+          value: String.t()
+        }
+  defstruct [:value]
+
+  field :value, 1, type: :string
+end

@@ -148,4 +148,53 @@ defmodule Protobuf.EncoderTest.Validation do
 
     assert Protobuf.Encoder.encode(msg) == Protobuf.Encoder.encode(msg1)
   end
+
+  test "field with extype extension" do
+    msg = %TestMsg.Ext.UseCase{my_string: "string"}
+    msg1 = %TestMsg.Ext.NotUseCase{my_string: %Google.Protobuf.StringValue{value: "string"}}
+
+    assert Protobuf.Encoder.encode(msg) == Protobuf.Encoder.encode(msg1)
+
+    encoding = Protobuf.Encoder.encode(msg)
+
+    assert msg == encoding |> Protobuf.Decoder.decode(TestMsg.Ext.UseCase)
+
+    assert %TestMsg.Ext.UseCase{my_string: "string"} ==
+             Protobuf.Decoder.decode(encoding, TestMsg.Ext.UseCase)
+
+    assert %TestMsg.Ext.NotUseCase{my_string: %Google.Protobuf.StringValue{value: "string"}} ==
+             Protobuf.Decoder.decode(encoding, TestMsg.Ext.NotUseCase)
+  end
+
+  test "fields with and without extype extension" do
+    msg = %TestMsg.Ext.DualUseCase{
+      with: "withit",
+      without: %Google.Protobuf.StringValue{value: "not_withit"}
+    }
+
+    bad_msg1 = %TestMsg.Ext.DualUseCase{
+      with: "withit",
+      without: "not_withit"
+    }
+
+    bad_msg2 = %TestMsg.Ext.DualUseCase{
+      with: %Google.Protobuf.StringValue{value: "withit"},
+      without: %Google.Protobuf.StringValue{value: "not_withit"}
+    }
+
+    assert encoding = Protobuf.Encoder.encode(msg)
+    assert_raise Protobuf.EncodeError, fn -> Protobuf.Encoder.encode(bad_msg1) end
+    assert_raise Protobuf.EncodeError, fn -> Protobuf.Encoder.encode(bad_msg2) end
+
+    assert msg ==
+             msg |> Protobuf.Encoder.encode() |> Protobuf.Decoder.decode(TestMsg.Ext.DualUseCase)
+  end
+
+  test "empty with extension" do
+    # Is this what we want?
+    assert %TestMsg.Ext.DualUseCase{with: nil, without: nil} == TestMsg.Ext.DualUseCase.new()
+
+    assert msg ==
+             msg |> Protobuf.Encoder.encode() |> Protobuf.Decoder.decode(TestMsg.Ext.DualUseCase)
+  end
 end
