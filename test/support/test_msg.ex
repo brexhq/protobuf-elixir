@@ -215,7 +215,8 @@ defmodule TestMsg do
 
   defmodule Ext.UseCase do
     @moduledoc false
-    use Protobuf, syntax: :proto3
+    use Protobuf, syntax: :proto3, field_options_processor: Protobuf.CustomOptions
+
 
     @type t :: %__MODULE__{
             my_string: Google.Protobuf.StringValue.t() | nil
@@ -227,7 +228,7 @@ defmodule TestMsg do
 
   defmodule Ext.NotUseCase do
     @moduledoc false
-    use Protobuf, syntax: :proto3
+    use Protobuf, syntax: :proto3, field_options_processor: Protobuf.CustomOptions
 
     @type t :: %__MODULE__{
             my_string: Google.Protobuf.StringValue.t() | nil
@@ -239,7 +240,7 @@ defmodule TestMsg do
 
   defmodule Ext.DualUseCase do
     @moduledoc false
-    use Protobuf, syntax: :proto3
+    use Protobuf, syntax: :proto3, field_options_processor: Protobuf.CustomOptions
 
     @type t :: %__MODULE__{
             with: Google.Protobuf.StringValue.t() | nil,

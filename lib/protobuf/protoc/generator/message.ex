@@ -30,12 +30,12 @@ defmodule Protobuf.Protoc.Generator.Message do
       name: Util.mod_name(ctx, new_ns),
       options: msg_opts_str(ctx, desc.options),
       structs: structs_str(desc, extensions),
-      typespec: typespec_str(fields, desc.oneof_decl, extensions),
+      typespec: typespec_str(ctx, fields, desc.oneof_decl, extensions),
       fields: fields,
       oneofs: oneofs_str(desc.oneof_decl),
       desc: generate_desc,
       extensions: extensions,
-      using_module: ctx.using_module
+      using_module: ctx.using_module,
     }
   end
 
@@ -78,7 +78,7 @@ defmodule Protobuf.Protoc.Generator.Message do
     inspect(exts)
   end
 
-  def msg_opts_str(%{syntax: syntax}, opts) do
+  def msg_opts_str(%{syntax: syntax, field_options_processor: field_options_processor}, opts) do
     msg_options = opts
 
     opts = %{
@@ -86,6 +86,14 @@ defmodule Protobuf.Protoc.Generator.Message do
       map: msg_options && msg_options.map_entry,
       deprecated: msg_options && msg_options.deprecated
     }
+
+    # TODO: yuck find a better way.
+    opts =
+      if field_options_processor == Protobuf.FieldOptionsProcessor do
+        opts
+      else
+        Map.put(opts, :field_options_processor, field_options_processor)
+      end
 
     str = Util.options_to_str(opts)
     if String.length(str) > 0, do: ", " <> str, else: ""
@@ -104,10 +112,10 @@ defmodule Protobuf.Protoc.Generator.Message do
     Enum.map_join(struct.oneof_decl ++ fields, ", ", fn f -> ":#{f.name}" end)
   end
 
-  def typespec_str([], [], []), do: "  @type t :: %__MODULE__{}\n"
-  def typespec_str([], [], [_ | _]), do: "  @type t :: %__MODULE__{__pb_extensions__: map}\n"
+  def typespec_str(_ctx, [], [], []), do: "  @type t :: %__MODULE__{}\n"
+  def typespec_str(_ctx, [], [], [_ | _]), do: "  @type t :: %__MODULE__{__pb_extensions__: map}\n"
 
-  def typespec_str(fields, oneofs, extensions) do
+  def typespec_str(ctx, fields, oneofs, extensions) do
     longest_field = fields |> Enum.max_by(&String.length(&1[:name]))
     longest_width = String.length(longest_field[:name])
     fields = Enum.filter(fields, fn f -> !f[:oneof] end)
@@ -120,7 +128,7 @@ defmodule Protobuf.Protoc.Generator.Message do
     types =
       types ++
         Enum.map(fields, fn f ->
-          {fmt_type_name(f[:name], longest_width), fmt_type(f)}
+          {fmt_type_name(f[:name], longest_width), fmt_type(ctx, f)}
         end)
 
     types =
@@ -148,21 +156,23 @@ defmodule Protobuf.Protoc.Generator.Message do
     String.pad_trailing("#{name}:", len + 1)
   end
 
-  defp fmt_type(%{opts: %{options: options}} = f) when not is_nil(options) do
-    Protobuf.CustomOptions.fmt_type(f, options)
+  defp fmt_type(ctx, %{label: label, type_enum: type_enum, type: type, opts: %{options: options}}) when not is_nil(options) do
+    repeated = if label == "repeated", do: true, else: false
+    mod = ctx.field_options_processor
+    "#{mod.type_to_spec(type_enum, type, repeated, options)}"
   end
 
-  defp fmt_type(%{opts: %{map: true}, map: {{k_type, k_name}, {v_type, v_name}}}) do
+  defp fmt_type(_ctx, %{opts: %{map: true}, map: {{k_type, k_name}, {v_type, v_name}}}) do
     k_type = type_to_spec(k_type, k_name)
     v_type = type_to_spec(v_type, v_name)
     "%{#{k_type} => #{v_type}}"
   end
 
-  defp fmt_type(%{label: "repeated", type_enum: type_enum, type: type}) do
+  defp fmt_type(_ctx, %{label: "repeated", type_enum: type_enum, type: type}) do
     "[#{type_to_spec(type_enum, type, true)}]"
   end
 
-  defp fmt_type(%{type_enum: type_enum, type: type}) do
+  defp fmt_type(_ctx, %{type_enum: type_enum, type: type}) do
     "#{type_to_spec(type_enum, type)}"
   end
 
@@ -183,7 +193,7 @@ defmodule Protobuf.Protoc.Generator.Message do
   end
 
   def get_field(ctx, f, nested_maps, oneofs) do
-    opts = field_options(f)
+    opts = field_options(ctx, f)
     map = nested_maps[f.type_name]
 
     opts = if map, do: Map.put(opts, :map, true), else: opts
@@ -245,9 +255,9 @@ defmodule Protobuf.Protoc.Generator.Message do
     end)
   end
 
-  defp field_options(f) do
+  defp field_options(ctx, f) do
     opts = %{enum: f.type == :TYPE_ENUM, default: default_value(f.type, f.default_value)}
-    if f.options, do: merge_field_options(opts, f), else: opts
+    if f.options, do: merge_field_options(ctx, opts, f), else: opts
   end
 
   defp label_name(:LABEL_OPTIONAL), do: "optional"
@@ -294,18 +304,13 @@ defmodule Protobuf.Protoc.Generator.Message do
     end
   end
 
-  defp merge_field_options(opts, f) do
+  defp merge_field_options(ctx, opts, f) do
     custom_options =
-      f.options
-      |> Google.Protobuf.FieldOptions.get_extension(Brex.Elixirpb.PbExtension, :field)
-      |> case do
-        nil ->
+      if not is_nil(f.options) do
+        mod = ctx.field_options_processor
+        mod.get_field_options(f.options)
+      else
           nil
-
-        elixir_field_options ->
-          elixir_field_options
-          |> Map.from_struct()
-          |> Enum.into([])
       end
 
     opts

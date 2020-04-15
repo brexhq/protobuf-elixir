@@ -129,7 +129,7 @@ defmodule Protobuf.Encoder do
   defp encode_field(
          :custom,
          val,
-         %{encoded_fnum: fnum, repeated?: is_repeated, map?: is_map, type: type, options: options} =
+         %{encoded_fnum: fnum, repeated?: is_repeated, map?: is_map, type: type, options: {mod, options}} =
            prop
        ) do
     repeated = is_repeated || is_map
@@ -138,7 +138,7 @@ defmodule Protobuf.Encoder do
       # IDK if this is needed
       v = if is_map, do: struct(prop.type, %{key: elem(v, 0), value: elem(v, 1)}), else: v
       # so that oneof {:atom, v} can be encoded
-      encoded = Protobuf.CustomOptions.encode_type(type, v, options, prop)
+      encoded = mod.encode_type(type, v, options)
       byte_size = byte_size(encoded)
       [fnum, encode_varint(byte_size), encoded]
     end)

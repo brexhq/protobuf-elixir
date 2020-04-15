@@ -71,6 +71,11 @@ defmodule Protobuf.Protoc.CLI do
     parse_params(ctx, t)
   end
 
+  def parse_params(ctx, ["field_options_processor=" <> field_options_processor | t]) do
+    ctx = %{ctx | field_options_processor: String.to_atom("Elixir." <> field_options_processor)}
+    parse_params(ctx, t)
+  end
+
   def parse_params(ctx, _), do: ctx
 
   @doc false

@@ -41,7 +41,7 @@ defmodule Protobuf.DSL do
 
     extension_props =
       Module.get_attribute(env.module, :extends)
-      |> gen_extension_props()
+      |> gen_extension_props(options)
 
     extensions = Module.get_attribute(env.module, :extensions)
     syntax = Keyword.get(options, :syntax, :proto2)
@@ -155,7 +155,9 @@ defmodule Protobuf.DSL do
 
   defp generate_msg_props(fields, oneofs, extensions, options) do
     syntax = Keyword.get(options, :syntax, :proto2)
-    field_props = field_props_map(syntax, fields)
+    field_options_processor = Keyword.get(options, :field_options_processor, Protobuf.FieldOptionsProcessor)
+
+    field_props = field_props_map(field_options_processor, syntax, fields)
 
     repeated_fields =
       field_props
@@ -184,11 +186,13 @@ defmodule Protobuf.DSL do
     }
   end
 
-  defp gen_extension_props(extends = [_ | _]) do
+  defp gen_extension_props(extends = [_ | _], options) do
+    field_options_processor = Keyword.get(options, :field_options_processor, Protobuf.FieldOptionsProcessor)
+
     extensions =
       Map.new(extends, fn {extendee, name_atom, fnum, opts} ->
         # Only proto2 has extensions
-        props = field_props(:proto2, name_atom, fnum, opts)
+        props = field_props(field_options_processor, :proto2, name_atom, fnum, opts)
 
         props = %Protobuf.Extension.Props.Extension{
           extendee: extendee,
@@ -206,7 +210,7 @@ defmodule Protobuf.DSL do
     %Protobuf.Extension.Props{extensions: extensions, name_to_tag: name_to_tag}
   end
 
-  defp gen_extension_props(_) do
+  defp gen_extension_props(_, _) do
     nil
   end
 
@@ -222,9 +226,9 @@ defmodule Protobuf.DSL do
     |> Enum.sort()
   end
 
-  defp field_props_map(syntax, fields) do
+  defp field_props_map(field_options_processor, syntax, fields) do
     fields
-    |> Enum.map(fn {name, fnum, opts} -> {fnum, field_props(syntax, name, fnum, opts)} end)
+    |> Enum.map(fn {name, fnum, opts} -> {fnum, field_props(field_options_processor, syntax, name, fnum, opts)} end)
     |> Enum.into(%{})
   end
 
@@ -234,7 +238,7 @@ defmodule Protobuf.DSL do
     |> Enum.into(%{})
   end
 
-  defp field_props(syntax, name, fnum, opts) do
+  defp field_props(field_options_processor, syntax, name, fnum, opts) do
     props = %Protobuf.FieldProps{
       fnum: fnum,
       name: to_string(name),
@@ -242,6 +246,7 @@ defmodule Protobuf.DSL do
     }
 
     opts_map = Enum.into(opts, %{})
+
     # parse simple fields then calculate others in cal_*
     parts =
       opts
@@ -253,6 +258,7 @@ defmodule Protobuf.DSL do
       |> cal_packed(syntax)
       |> cal_repeated(opts_map)
       |> cal_deprecated()
+      |> cal_custom_options(field_options_processor)
 
     struct(props, parts)
     |> cal_encoded_fnum()
@@ -358,6 +364,11 @@ defmodule Protobuf.DSL do
 
   defp cal_deprecated(%{deprecated: true} = props), do: Map.put(props, :deprecated?, true)
   defp cal_deprecated(props), do: props
+
+  defp cal_custom_options(%{options: options} = props, field_options_processor) do
+    Map.put(props, :options, {field_options_processor, options})
+  end
+  defp cal_custom_options(props, _), do: props
 
   defp cal_encoded_fnum(%{fnum: fnum, packed?: true} = props) do
     encoded_fnum = Protobuf.Encoder.encode_fnum(fnum, Protobuf.Encoder.wire_type(:bytes))

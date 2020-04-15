@@ -226,6 +226,6 @@ defmodule Protobuf.DSLTest do
 
   test "Extension use case" do
     msg_props = TestMsg.Ext.UseCase.__message_props__()
-    assert %Protobuf.FieldProps{options: [extype: "String.t"]} = msg_props.field_props[1]
+    assert %Protobuf.FieldProps{options: {Protobuf.CustomOptions, [extype: "String.t"]}} = msg_props.field_props[1]
   end
 end

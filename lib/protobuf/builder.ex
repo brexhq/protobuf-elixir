@@ -13,6 +13,9 @@ defmodule Protobuf.Builder do
     new_maybe_strict(mod, attrs, _strict? = true)
   end
 
+  def field_default(_, %{options: {mod, options}} = props) when not is_nil(options) do
+    mod.type_default(props.type, options)
+  end
   def field_default(_, %{default: default}) when not is_nil(default), do: default
   def field_default(_, %{repeated?: true}), do: []
   def field_default(_, %{map?: true}), do: %{}

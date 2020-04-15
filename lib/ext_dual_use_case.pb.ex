@@ -1,6 +1,6 @@
 defmodule Ext.DualUseCase do
   @moduledoc false
-  use Protobuf, syntax: :proto3
+  use Protobuf, field_options_processor: Protobuf.CustomOptions, syntax: :proto3
 
   @type t :: %__MODULE__{
           with: String.t() | nil,

@@ -174,7 +174,15 @@ defmodule Protobuf.Protoc.Generator.MessageTest do
   end
 
   test "generate/2 supports extensions on field options" do
-    ctx = %Context{package: ""}
+    ctx = %Protobuf.Protoc.Context{
+      dep_type_mapping: %{
+        ".brex.elixirpb.FieldOptions" => %{type_name: "Brex.Elixirpb.FieldOptions"},
+        ".ext.DualUseCase" => %{type_name: "Ext.DualUseCase"},
+        ".google.protobuf.StringValue" => %{type_name: "Google.Protobuf.StringValue"}
+      },
+      package: "ext",
+      field_options_processor: Protobuf.CustomOptions
+    }
 
     field_opts = Google.Protobuf.FieldOptions.new()
     custom_opts = Brex.Elixirpb.FieldOptions.new(extype: "String.t")
@@ -195,7 +203,7 @@ defmodule Protobuf.Protoc.Generator.MessageTest do
             name: "my_string",
             number: 1,
             type: :TYPE_MESSAGE,
-            # type_name: ".google.protodescbuf.StringValue",
+            type_name: ".google.protobuf.StringValue",
             label: :LABEL_OPTIONAL,
             options: opts
           )
@@ -205,7 +213,7 @@ defmodule Protobuf.Protoc.Generator.MessageTest do
     {[], [msg]} = Generator.generate(ctx, desc)
 
     assert msg =~
-             "field :my_string, 1, optional: true, type: :message, options: [extype: \"String.t\"]\n"
+             "field :my_string, 1, optional: true, type: Google.Protobuf.StringValue, options: [extype: \"String.t\"]\n"
   end
 
   test "generate/2 supports message type field" do
@@ -484,6 +492,7 @@ defmodule Protobuf.Protoc.Generator.MessageTest do
         ".google.protobuf.StringValue" => %{type_name: "Google.Protobuf.StringValue"}
       },
       package: "ext",
+      field_options_processor: Protobuf.CustomOptions
     }
 
     desc = %Google.Protobuf.DescriptorProto{
@@ -538,6 +547,8 @@ defmodule Protobuf.Protoc.Generator.MessageTest do
     }
 
     {[], [msg]} = Generator.generate(ctx, desc)
+
+    assert msg =~ "use Protobuf, field_options_processor: Protobuf.CustomOptions"
 
     assert msg =~ "@type t :: %__MODULE__{\n    with:    String.t | nil,\n    without: Google.Protobuf.StringValue.t | nil\n  }"
 

@@ -150,7 +150,8 @@ defmodule Protobuf.Decoder do
 
         struct =
           if not is_nil(options) do
-            embedded_msg = Protobuf.CustomOptions.decode_type(val, type, options)
+            {mod, options} = options
+            embedded_msg = mod.decode_type(val, type, options)
             val = if is_map, do: %{embedded_msg.key => embedded_msg.value}, else: embedded_msg
             val = if oneof, do: {name_atom, val}, else: val
 
