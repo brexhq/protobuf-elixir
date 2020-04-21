@@ -1,48 +1,58 @@
 defmodule Protobuf.CustomOptions do
   #one problem with this approach is that there may be other calling sites we need to modify that we don't know
-  import Protobuf.Decoder
-  require Logger
 
   @behaviour Protobuf.FieldOptionsProcessor
 
-  @impl true
-  def encode_type(type, v, [extype: extype]) do
-    encoded = do_encode_type(type, v, extype)
-    IO.iodata_to_binary(encoded)
+  @type options :: Keyword.t(String.t())
+
+
+  def get_mod(Google.Protobuf.Timestamp), do: MyTimeStamp
+  def get_mod(Google.Protobuf.DoubleValue), do: Wrappers
+  def get_mod(Google.Protobuf.FloatValue), do: Wrappers
+  def get_mod(Google.Protobuf.Int64Value), do: Wrappers
+  def get_mod(Google.Protobuf.UInt64Value), do: Wrappers
+  def get_mod(Google.Protobuf.Int32Value), do: Wrappers
+  def get_mod(Google.Protobuf.UInt32Value), do: Wrappers
+  def get_mod(Google.Protobuf.BoolValue), do: Wrappers
+  def get_mod(Google.Protobuf.StringValue), do: Wrappers
+  def get_mod(Google.Protobuf.BytesValue), do: Wrappers
+  def get_mod(str) do
+    raise "Sorry #{str} is unsupported"
   end
 
-  def do_encode_type(Google.Protobuf.StringValue = type, v, "String.t") when is_binary(v) do
-    fnum = type.__message_props__.field_props[1].encoded_fnum
-    encoded = Protobuf.Encoder.encode_type(:string, v)
-    [[fnum, encoded]]
+  def get_mod_string("Google.Protobuf.Timestamp"), do: MyTimeStamp
+  def get_mod_string("Google.Protobuf.DoubleValue"), do: Wrappers
+  def get_mod_string("Google.Protobuf.FloatValue"), do: Wrappers
+  def get_mod_string("Google.Protobuf.Int64Value"), do: Wrappers
+  def get_mod_string("Google.Protobuf.UInt64Value"), do: Wrappers
+  def get_mod_string("Google.Protobuf.Int32Value"), do: Wrappers
+  def get_mod_string("Google.Protobuf.UInt32Value"), do: Wrappers
+  def get_mod_string("Google.Protobuf.BoolValue"), do: Wrappers
+  def get_mod_string("Google.Protobuf.StringValue"), do: Wrappers
+  def get_mod_string("Google.Protobuf.BytesValue"), do: Wrappers
+  def get_mod_string(str) do
+    raise "Sorry #{str} is unsupported"
+  end
+
+  @impl true
+  def encode_type(type, v, [extype: extype]) do
+    encoded = get_mod(type).do_encode_type(type, v, extype)
+    IO.iodata_to_binary(encoded)
   end
 
   @impl true
   def decode_type(val, type, extype: extype) do
-    [_tag, _wire, val | _rest] = Protobuf.Decoder.decode_raw(val)
-    do_decode_type(type, val, extype)
-  end
-
-  def do_decode_type(Google.Protobuf.StringValue, val, "String.t") do
-    Protobuf.Decoder.decode_type_m(:string, :value, val)
+    get_mod(type).do_decode_type(type, val, extype)
   end
 
   @impl true
   def type_to_spec(_type_enum, type, _repeated, [extype: extype]) do
-    do_type_to_spec(type, extype)
-  end
-
-  def do_type_to_spec("Google.Protobuf.StringValue", "String.t") do
-    "String.t | nil"
+    get_mod_string(type).do_type_to_spec(type, extype)
   end
 
   @impl true
   def type_default(type, [extype: extype]) do
-    do_type_default(type, extype)
-  end
-
-  def do_type_default(Google.Protobuf.StringValue, "String.t") do
-    nil
+    get_mod(type).do_type_default(type, extype)
   end
 
   @impl true

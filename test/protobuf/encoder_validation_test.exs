@@ -150,7 +150,7 @@ defmodule Protobuf.EncoderTest.Validation do
   end
 
   test "field with extype extension" do
-    msg = %TestMsg.Ext.UseCase{my_string: "string"}
+    msg = TestMsg.Ext.UseCase.new(my_string: "string")
     msg1 = %TestMsg.Ext.NotUseCase{my_string: %Google.Protobuf.StringValue{value: "string"}}
 
     assert Protobuf.Encoder.encode(msg) == Protobuf.Encoder.encode(msg1)

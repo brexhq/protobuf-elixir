@@ -13,7 +13,7 @@ defmodule Protobuf.FieldOptionsProcessor do
 
   @callback type_default(type, options) :: any
 
-  @callback type_to_spec(type_enum, type, repeated :: boolean, options) :: String.t
+  @callback type_to_spec(type_enum, type :: String.t(), repeated :: boolean, options) :: String.t
 
   @callback get_field_options(orginal_options :: any) :: options
 
