@@ -144,9 +144,9 @@ defmodule TestMsg do
   defmodule Atom.Bar2 do
     use Protobuf, syntax: :proto3
 
-    field :a, 1, type: EnumFoo, enum: true, options: [extype: "atom"]
-    field :b, 2, type: EnumFoo, enum: true, options: [extype: "atom"]
-  end
+    field :a, 1, type: EnumFoo, enum: true, options: [enum: "lowercase"]
+    field :b, 2, type: EnumFoo, enum: true, options: [enum: "atomize"]
+end
 
   defmodule Ext.EnumFoo do
     @moduledoc false

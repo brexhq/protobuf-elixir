@@ -1,30 +1,20 @@
-defmodule Ext.MyEnum do
+defmodule Ext.TrafficLightColor do
   @moduledoc false
   use Protobuf, enum: true, syntax: :proto3
 
   @type t ::
           integer
-          | :NO_REASON_PROVIDED
-          | :DEVICE_TOKEN_NOT_FOR_TOPIC
-          | :BAD_DEVICE_TOKEN
-          | :UNREGISTERED
-          | :INVALID_PHONE_NUMBER
-          | :DUPLICATE_CHANNEL
-          | :RECEIVED_STOP_FROM_USER
-          | :DISABLED_CHANNEL
-          | :LANDLINE_OR_UNREACHABLE_CARRIER
-          | :NOT_REGISTERED
+          | :TRAFFIC_LIGHT_COLOR_INVALID
+          | :TRAFFIC_LIGHT_COLOR_UNSET
+          | :TRAFFIC_LIGHT_COLOR_GREEN
+          | :TRAFFIC_LIGHT_COLOR_YELLOW
+          | :TRAFFIC_LIGHT_COLOR_RED
 
-  field :NO_REASON_PROVIDED, 0
-  field :DEVICE_TOKEN_NOT_FOR_TOPIC, 1
-  field :BAD_DEVICE_TOKEN, 2
-  field :UNREGISTERED, 3
-  field :INVALID_PHONE_NUMBER, 4
-  field :DUPLICATE_CHANNEL, 5
-  field :RECEIVED_STOP_FROM_USER, 6
-  field :DISABLED_CHANNEL, 7
-  field :LANDLINE_OR_UNREACHABLE_CARRIER, 8
-  field :NOT_REGISTERED, 9
+  field :TRAFFIC_LIGHT_COLOR_INVALID, 0
+  field :TRAFFIC_LIGHT_COLOR_UNSET, 1
+  field :TRAFFIC_LIGHT_COLOR_GREEN, 2
+  field :TRAFFIC_LIGHT_COLOR_YELLOW, 3
+  field :TRAFFIC_LIGHT_COLOR_RED, 4
 end
 
 defmodule Ext.Nested do
@@ -61,8 +51,10 @@ defmodule Ext.MyMessage do
           normal1: non_neg_integer,
           normal2: String.t(),
           nested: Ext.Nested.t() | nil,
-          enum: Ext.MyEnum.t(),
-          no_enum: Ext.MyEnum.t()
+          color: Ext.TrafficLightColor.t(),
+          color_lc: Ext.TrafficLightColor.t(),
+          color_depr: Ext.TrafficLightColor.t(),
+          color_atom: Ext.TrafficLightColor.t()
         }
   defstruct [
     :f1,
@@ -79,8 +71,10 @@ defmodule Ext.MyMessage do
     :normal1,
     :normal2,
     :nested,
-    :enum,
-    :no_enum
+    :color,
+    :color_lc,
+    :color_depr,
+    :color_atom
   ]
 
   field :f1, 1, type: Google.Protobuf.DoubleValue, options: [extype: "float"]
@@ -102,6 +96,8 @@ defmodule Ext.MyMessage do
   field :normal1, 12, type: :uint64
   field :normal2, 13, type: :string
   field :nested, 14, type: Ext.Nested
-  field :enum, 15, type: Ext.MyEnum, enum: true, options: [extype: "atom"]
-  field :no_enum, 16, type: Ext.MyEnum, enum: true
+  field :color, 15, type: Ext.TrafficLightColor, enum: true
+  field :color_lc, 16, type: Ext.TrafficLightColor, enum: true, options: [enum: "lowercase"]
+  field :color_depr, 17, type: Ext.TrafficLightColor, enum: true, options: [enum: "deprefix"]
+  field :color_atom, 18, type: Ext.TrafficLightColor, enum: true, options: [enum: "atomize"]
 end

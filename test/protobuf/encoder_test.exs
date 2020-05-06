@@ -82,6 +82,8 @@ defmodule Protobuf.EncoderTest do
   end
 
   test "encodes enum with lowercase atoms" do
+    bin = Encoder.encode(TestMsg.Atom.Bar2.new(a: :unknown))
+    assert bin == <<>>
     bin = Encoder.encode(TestMsg.Atom.Bar2.new(a: :a))
     assert bin == <<8, 1>>
     bin1 = Encoder.encode(TestMsg.Atom.Bar2.new(a: :A))

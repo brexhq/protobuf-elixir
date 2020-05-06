@@ -89,6 +89,8 @@ defmodule Protobuf.DecoderTest do
     assert struct == TestMsg.Atom.Bar2.new(a: :a)
     struct = Decoder.decode(<<16, 2>>, TestMsg.Atom.Bar2)
     assert struct == TestMsg.Atom.Bar2.new(b: :b)
+    struct = Decoder.decode(<<>>, TestMsg.Atom.Bar2)
+    assert struct == TestMsg.Atom.Bar2.new(a: :unknown)
   end
 
   test "decodes unknown enum type" do
