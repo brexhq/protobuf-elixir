@@ -26,14 +26,11 @@ defprotocol Extype.Protocol do
   @spec new(type, value, extype) :: value
   def new(type, value, extype)
 
-  @spec skip?(type, value, extype) :: boolean
-  def skip?(type, value, extype)
-
   @spec encode_type(type, value, extype) :: binary
   def encode_type(type, v, extype)
 
   @spec decode_type(type, val :: binary, extype) :: value
-  def decode_type(type, val, sextype)
+  def decode_type(type, val, extype)
 end
 
 defmodule Extype do
