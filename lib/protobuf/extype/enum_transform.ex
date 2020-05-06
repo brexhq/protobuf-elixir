@@ -14,13 +14,20 @@ defmodule EnumTransform do
 
   @type value :: atom
 
-  def validate_and_get_transformers!({:enum, _type}, "lowercase"), do: [EnumTransform.Lowercase]
-  def validate_and_get_transformers!({:enum, _type}, "deprefix"), do: [EnumTransform.Deprefix]
-  def validate_and_get_transformers!({:enum, _type}, "atomize"), do: [EnumTransform.Deprefix, EnumTransform.Lowercase]
-  def validate_and_get_transformers!({:enum, _type}, "lowercase, deprefix"), do: [EnumTransform.Deprefix, EnumTransform.Lowercase]
-  def validate_and_get_transformers!({:enum, _type}, "deprefix, lowercase"), do: [EnumTransform.Deprefix, EnumTransform.Lowercase]
-  def validate_and_get_transformers!({:enum, _type}, transform) do
-    raise "Invalid enum transformation: #{transform}. Accepted values are lowercase, deprefix, and atomize"
+
+
+  def validate_and_get_transformers!({:enum, _type}, transform) when is_binary(transform) do
+    transform
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.sort()
+    |> Enum.flat_map(fn
+      "lowercase"-> [EnumTransform.Lowercase]
+      "deprefix" ->[EnumTransform.Deprefix]
+      "atomize" -> [EnumTransform.Deprefix, EnumTransform.Lowercase]
+      _ -> raise "Invalid enum transformation: #{transform}. Accepted values are lowercase, deprefix, and atomize"
+    end)
+    |> Enum.uniq()
   end
   def validate_and_get_transformers!(type, _transform) do
     raise "Enum transformation applied to incorrect type: #{type}."
