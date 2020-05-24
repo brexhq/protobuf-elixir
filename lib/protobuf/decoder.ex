@@ -16,6 +16,15 @@ defmodule Protobuf.Decoder do
     struct = build_struct(kvs, msg_props, module.new())
     reverse_repeated(struct, repeated_fields)
   end
+  
+  def decode_delimited_stream(data, module) do
+    Stream.unfold(data, fn
+      <<>> -> nil
+      data ->
+        {message_bin, rest} = decode_varint(data, :delimiter)
+        {decode(message_bin, module), rest}
+    end)
+  end
 
   @doc false
   def decode_raw(data) do
@@ -349,6 +358,11 @@ defmodule Protobuf.Decoder do
   defp raw_handle_varint(:bytes_len, <<bin::bits>>, result, len) do
     <<bytes::bytes-size(len), rest::bits>> = bin
     raw_decode_key(rest, [bytes | result])
+  end
+
+  defp raw_handle_varint(:delimiter, <<bin::bits>>, result, len) do
+    <<bytes::bytes-size(len), rest::bits>> = bin
+    {bytes, rest}
   end
 
   defp raw_handle_varint(:packed, <<>>, result, val) do
