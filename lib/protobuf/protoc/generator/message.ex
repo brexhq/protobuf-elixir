@@ -250,8 +250,11 @@ defmodule Protobuf.Protoc.Generator.Message do
   end
 
   defp field_options(ctx, f) do
-    opts = %{enum: f.type == :TYPE_ENUM, default: default_value(f.type, f.default_value)}
-    if f.options, do: merge_field_options(ctx, opts, f), else: opts
+    enum? = f.type == :TYPE_ENUM
+    default = default_value(f.type, f.default_value)
+    opts = put_json_name(%{enum: enum?, default: default}, ctx.syntax, f)
+
+    merge_field_options(ctx, opts, f)
   end
 
   defp label_name(:LABEL_OPTIONAL), do: "optional"
@@ -298,6 +301,8 @@ defmodule Protobuf.Protoc.Generator.Message do
     end
   end
 
+  defp merge_field_options(_ctx, opts, %{options: nil}), do: opts
+
   defp merge_field_options(%{custom_field_options?: true}, opts, f) do
     custom_options =
       f.options
@@ -323,4 +328,14 @@ defmodule Protobuf.Protoc.Generator.Message do
     |> Map.put(:packed, f.options.packed)
     |> Map.put(:deprecated, f.options.deprecated)
   end
+
+  # Omit `json_name` from the options list when it matches the original field
+  # name to keep the list small. Only Proto3 has JSON support for now.
+  defp put_json_name(opts, :proto3, %{name: name, json_name: name}), do: opts
+
+  defp put_json_name(opts, :proto3, %{json_name: json_name}) do
+    Map.put(opts, :json_name, inspect(json_name))
+  end
+
+  defp put_json_name(opts, _syntax, _props), do: opts
 end
