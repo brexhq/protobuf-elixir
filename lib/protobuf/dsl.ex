@@ -98,6 +98,12 @@ defmodule Protobuf.DSL do
     num_to_atom = for {fnum, %{name_atom: name_atom}} <- props, do: {fnum, name_atom}
     atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
 
+    string_or_num_to_atom =
+      for {fnum, %{name: name, name_atom: name_atom}} <- props,
+          key <- [fnum, name],
+          do: {key, name_atom},
+          into: %{}
+
     prefix =
       module
       |> Protobuf.Protoc.Generator.Util.mod_to_name()
@@ -124,6 +130,9 @@ defmodule Protobuf.DSL do
       [
         quote do
           def mapping(), do: unquote(Macro.escape(atom_to_num))
+        end,
+        quote do
+          def __reverse_mapping__(), do: unquote(Macro.escape(string_or_num_to_atom))
         end,
         quote do
           def prefix(), do: unquote(if is_prefixed?, do: prefix, else: "")
