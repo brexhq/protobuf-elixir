@@ -73,7 +73,7 @@ defmodule Protobuf.Protoc.Generator.Message do
   end
 
   defp gen_extensions(exts) do
-    inspect(exts)
+    inspect(exts, limit: :infinity)
   end
 
   def msg_opts_str(%{syntax: syntax, custom_field_options?: custom_field_options}, opts) do
