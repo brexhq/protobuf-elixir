@@ -87,8 +87,8 @@ defmodule Protobuf.Encoder do
 
   @doc false
   def skip_field?(syntax, val, prop)
-  def skip_field?(_syntax, val, %{type: type, options: options}) when not is_nil(options) do
-    FieldOptionsProcessor.skip?(type, val, options)
+  def skip_field?(_syntax, val, %{type: type, options: options} = prop) when not is_nil(options) do
+    FieldOptionsProcessor.skip?(type, val, prop, options)
   end
   def skip_field?(_, [], _), do: true
   def skip_field?(_, v, _) when map_size(v) == 0, do: true
@@ -133,8 +133,14 @@ defmodule Protobuf.Encoder do
     end)
   end
 
-  defp encode_field(:packed, val, %{type: type, encoded_fnum: fnum}) do
-    encoded = Enum.map(val, fn v -> encode_type(type, v) end)
+  defp encode_field(:packed, val, %{type: type, encoded_fnum: fnum} = prop) do
+    encoded = Enum.map(val, fn v ->
+      if is_nil(prop.options) do
+        encode_type(type, v)
+      else
+        FieldOptionsProcessor.encode_type(type, v, prop.options)
+      end
+    end)
     byte_size = IO.iodata_length(encoded)
     [fnum | encode_varint(byte_size)] ++ encoded
   end
@@ -262,8 +268,8 @@ defmodule Protobuf.Encoder do
   defp skip_enum?(%{enum?: false}, _), do: false
   defp skip_enum?(%{enum?: true, oneof: oneof}, _) when not is_nil(oneof), do: false
   defp skip_enum?(%{required?: true}, _), do: false
-  defp skip_enum?(%{type: type, options: options}, value) when not is_nil(options) do
-    FieldOptionsProcessor.skip?(type, value, options)
+  defp skip_enum?(%{type: type, options: options} = prop, value) when not is_nil(options) do
+    FieldOptionsProcessor.skip?(type, value, prop, options)
   end
   defp skip_enum?(%{type: type}, value), do: is_enum_default?(type, value)
 

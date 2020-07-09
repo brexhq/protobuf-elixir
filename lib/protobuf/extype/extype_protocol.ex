@@ -60,6 +60,7 @@ defmodule Extype do
     end
   end
 
+  @spec skip?(type, value, extype) :: boolean
   def skip?(_type, nil, _extype), do: true
   def skip?(_type, _value, _extype), do: false
 

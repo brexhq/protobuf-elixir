@@ -27,21 +27,23 @@ defmodule Protobuf.FieldOptionsProcessorTest do
   end
 
   test "type_default" do
+    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.BoolValue, %{}, extype: "boolean"))
 
-    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.BoolValue, extype: "boolean"))
+    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, %{}, extype: "DateTime.t()"))
+    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, %{}, extype: "DateTime.t"))
+    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, %{}, extype: "NaiveDateTime.t()"))
 
-    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, extype: "DateTime.t()"))
-    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, extype: "DateTime.t"))
-    assert is_nil(FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, extype: "NaiveDateTime.t()"))
+    assert [] ==
+             FieldOptionsProcessor.type_default(Google.Protobuf.BoolValue, %{repeated?: true}, extype: "boolean")
 
     # Typo in extype
     assert_raise RuntimeError, "Invalid extype pairing, Datetime.t() not compatible with " <>
       "Elixir.Google.Protobuf.Timestamp. Supported types are DateTime.t() or NaiveDateTime.t()",
-      fn -> FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, extype: "Datetime.t") end
+      fn -> FieldOptionsProcessor.type_default(Google.Protobuf.Timestamp, %{}, extype: "Datetime.t") end
 
     # Unsupported struct and bad type
     assert_raise RuntimeError, "Sorry Elixir.Google.Protobuf.UnrealValue does not support the field option extype",
-      fn -> FieldOptionsProcessor.type_default(Google.Protobuf.UnrealValue, [extype: "vfdkhnlim"]) end
+      fn -> FieldOptionsProcessor.type_default(Google.Protobuf.UnrealValue, %{}, [extype: "vfdkhnlim"]) end
   end
 
   test "encoding and decoding timestamp" do

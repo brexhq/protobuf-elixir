@@ -14,7 +14,7 @@ defmodule Protobuf.Builder do
   end
 
   def field_default(_, %{options: options} = props) when not is_nil(options) do
-    Protobuf.FieldOptionsProcessor.type_default(props.type, options)
+    Protobuf.FieldOptionsProcessor.type_default(props.type, props, options)
   end
   def field_default(_, %{default: default}) when not is_nil(default), do: default
   def field_default(_, %{repeated?: true}), do: []

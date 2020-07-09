@@ -444,13 +444,16 @@ defmodule Protobuf.Decoder do
   end
 
   # packed
-  defp put_packed_field(msg, %{wire_type: wire_type, type: type, name_atom: key}, val) do
+  defp put_packed_field(msg, %{wire_type: wire_type, type: type, name_atom: key, options: options}, val) do
     vals =
       decode_packed(wire_type, val, [])
       |> Enum.map(fn v ->
-        decode_type_m(type, key, v)
+        if is_nil(options) do
+          decode_type_m(type, key, v)
+        else
+          Protobuf.FieldOptionsProcessor.decode_type(v, type, options)
+        end
       end)
-
     case msg do
       %{^key => nil} ->
         Map.put(msg, key, vals)

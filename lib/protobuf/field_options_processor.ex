@@ -39,8 +39,11 @@ defmodule Protobuf.FieldOptionsProcessor do
     mod.type_to_spec(type, repeated, option)
   end
 
-  def type_default(type, []), do: Protobuf.Builder.type_default(type)
-  def type_default(type, options) do
+  def type_default(type, _props, []), do: Protobuf.Builder.type_default(type)
+
+  def type_default(_type, %{repeated?: true}, _options), do: []
+
+  def type_default(type, _props, options) do
     {mod, option} = get_mod(options)
     mod.type_default(type, option)
   end
@@ -51,8 +54,11 @@ defmodule Protobuf.FieldOptionsProcessor do
     mod.new(type, value, option)
   end
 
-  def skip?(type, value, []), do: Protobuf.Encoder.is_enum_default?(type, value)
-  def skip?(type, value, options) do
+  def skip?(type, value, _prop, []), do: Protobuf.Encoder.is_enum_default?(type, value)
+
+  def skip?(_type, _value, %{repeated?: true}, _options), do: false
+
+  def skip?(type, value, _prop, options) do
     {mod, option} = get_mod(options)
     mod.skip?(type, value, option)
   end
