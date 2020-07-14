@@ -54,12 +54,15 @@ defmodule Protobuf.Protoc.IntegrationTest do
 
   test "extensions" do
     assert "hello" == Protobuf.Protoc.ExtTest.Foo.new(a: "hello").a
-    dual = Protobuf.Protoc.ExtTest.Dual.new(a: "s1", b: Google.Protobuf.StringValue.new(value: "s2"))
+
+    dual =
+      Protobuf.Protoc.ExtTest.Dual.new(a: "s1", b: Google.Protobuf.StringValue.new(value: "s2"))
 
     assert dual.a == "s1"
     assert dual.b.value == "s2"
 
-    assert %{options: [extype: "String.t"]} = Protobuf.Protoc.ExtTest.Dual.__message_props__().field_props[1]
+    assert %{options: [extype: "String.t"]} =
+             Protobuf.Protoc.ExtTest.Dual.__message_props__().field_props[1]
 
     output = Protobuf.Protoc.ExtTest.Dual.encode(dual)
 

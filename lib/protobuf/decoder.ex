@@ -164,7 +164,8 @@ defmodule Protobuf.Decoder do
 
             Map.put(struct, key, val)
           else
-            val = if is_nil(options) do
+            val =
+              if is_nil(options) do
                 decode_type_m(type, key, val)
               else
                 Protobuf.FieldOptionsProcessor.decode_type(val, type, options)
@@ -444,7 +445,11 @@ defmodule Protobuf.Decoder do
   end
 
   # packed
-  defp put_packed_field(msg, %{wire_type: wire_type, type: type, name_atom: key, options: options}, val) do
+  defp put_packed_field(
+         msg,
+         %{wire_type: wire_type, type: type, name_atom: key, options: options},
+         val
+       ) do
     vals =
       decode_packed(wire_type, val, [])
       |> Enum.map(fn v ->
@@ -454,6 +459,7 @@ defmodule Protobuf.Decoder do
           Protobuf.FieldOptionsProcessor.decode_type(v, type, options)
         end
       end)
+
     case msg do
       %{^key => nil} ->
         Map.put(msg, key, vals)
