@@ -35,8 +35,8 @@ defmodule Protobuf.Protoc.Generator.Enum do
     ":#{f.name}, #{f.number}"
   end
 
-  def cal_options(%{custom_field_options?: true}, desc) do
-    Google.Protobuf.EnumOptions.get_extension(desc.options, Brex.Elixirpb.PbExtension, :enum)
+  def cal_options(%{custom_field_options?: true}, %{options: options}) when not is_nil(options) do
+    Google.Protobuf.EnumOptions.get_extension(options, Brex.Elixirpb.PbExtension, :enum)
   end
   def cal_options(_ctx, _desc), do: nil
 

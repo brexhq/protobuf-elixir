@@ -36,7 +36,7 @@ defmodule Brex.Elixirpb.PbExtension do
     optional: true,
     type: Brex.Elixirpb.FieldOptions
 
-  extend Google.Protobuf.EnumOptions, :enum, 65007,
+  extend Google.Protobuf.EnumOptions, :enum, 65008,
     optional: true,
     type: Brex.Elixirpb.EnumOptions
 end

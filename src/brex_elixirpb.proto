@@ -33,5 +33,5 @@ message EnumOptions {
 }
 
 extend google.protobuf.EnumOptions {
-  optional EnumOptions enum = 65007;
+  optional EnumOptions enum = 65008;
 }
