@@ -35,18 +35,28 @@ defmodule Protobuf.DSL do
     end
   end
 
+  defmacro option([{option, value}]) do
+    #option (brex.elixirpb.enum).deprefix = true;
+    quote do
+      @options {unquote(option), unquote(value)}
+    end
+  end
+
   defmacro __before_compile__(env) do
     fields = Module.get_attribute(env.module, :fields)
     options = Module.get_attribute(env.module, :options)
+
+    custom_options = Keyword.get(options, :custom_field_options?)
 
     extension_props =
       Module.get_attribute(env.module, :extends)
       |> gen_extension_props()
 
     extensions = Module.get_attribute(env.module, :extensions)
+    msg_options = Module.get_attribute(env.module, :options)
     syntax = Keyword.get(options, :syntax, :proto2)
     oneofs = Module.get_attribute(env.module, :oneofs)
-    msg_props = generate_msg_props(fields, oneofs, extensions, options)
+    msg_props = generate_msg_props(fields, oneofs, extensions, options, msg_options)
     default_fields = generate_default_fields(syntax, msg_props)
     default_struct = Map.put(default_fields, :__struct__, env.module)
 
@@ -62,7 +72,7 @@ defmodule Protobuf.DSL do
         unquote(Macro.escape(msg_props))
       end
 
-      unquote(def_enum_functions(msg_props, fields, env.module))
+      unquote(def_enum_functions(msg_props, fields, env.module, custom_options))
 
       if unquote(Macro.escape(extension_props)) != nil do
         def __protobuf_info__(:extension_props) do
@@ -90,19 +100,27 @@ defmodule Protobuf.DSL do
     end
   end
 
-  defp def_enum_functions(%{syntax: syntax, enum?: true, field_props: props}, fields, module) do
+  defp def_enum_functions(%{syntax: syntax, enum?: true, field_props: props, options: options} = desc, fields, module, custom_options) do
     if syntax == :proto3 do
       unless props[0], do: raise("The first enum value must be zero in proto3")
     end
 
-    num_to_atom = for {fnum, %{name_atom: name_atom}} <- props, do: {fnum, name_atom}
-    atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
+    {atom_to_num, string_or_num_to_atom} =
+      if is_nil(options) or is_nil(custom_options) do
+        atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
 
-    string_or_num_to_atom =
-      for {fnum, %{name: name, name_atom: name_atom}} <- props,
-          key <- [fnum, name],
-          do: {key, name_atom},
-          into: %{}
+        string_or_num_to_atom =
+          for {fnum, %{name: name, name_atom: name_atom}} <- props,
+              key <- [fnum, name],
+              do: {key, name_atom},
+              into: %{}
+
+        {atom_to_num, string_or_num_to_atom}
+      else
+        Protobuf.EnumOptionsProcessor.generate_mappings(module, props, fields, options)
+      end
+
+    IO.inspect(atom_to_num, label: "whattt")
 
     prefix =
       module
@@ -123,7 +141,7 @@ defmodule Protobuf.DSL do
           def value(v) when is_integer(v), do: v
         end
       ] ++
-      Enum.map(num_to_atom, fn {fnum, name_atom} ->
+      Enum.map(atom_to_num, fn {name_atom, fnum} ->
         quote do
           def key(unquote(fnum)), do: unquote(name_atom)
         end
@@ -141,7 +159,7 @@ defmodule Protobuf.DSL do
       ]
   end
 
-  defp def_enum_functions(_, _, _), do: nil
+  defp def_enum_functions(desc, _, _, _), do: nil
 
   defp def_extension_functions() do
     quote do
@@ -159,7 +177,7 @@ defmodule Protobuf.DSL do
     end
   end
 
-  defp generate_msg_props(fields, oneofs, extensions, options) do
+  defp generate_msg_props(fields, oneofs, extensions, options, msg_options) do
     syntax = Keyword.get(options, :syntax, :proto2)
     field_props = field_props_map(syntax, fields)
 
@@ -186,7 +204,8 @@ defmodule Protobuf.DSL do
       oneof: Enum.reverse(oneofs),
       enum?: Keyword.get(options, :enum) == true,
       map?: Keyword.get(options, :map) == true,
-      extension_range: extensions
+      extension_range: extensions,
+      options: []
     }
   end
 

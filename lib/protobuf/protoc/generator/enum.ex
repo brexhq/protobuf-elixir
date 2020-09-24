@@ -14,8 +14,11 @@ defmodule Protobuf.Protoc.Generator.Enum do
     generate_desc = if ctx.gen_descriptors?, do: desc, else: nil
     type = generate_type(enum_options, desc)
 
-    Protobuf.Protoc.Template.enum(msg_name, msg_opts(ctx, desc), fields, type, generate_desc)
+    Protobuf.Protoc.Template.enum(msg_name, msg_opts(ctx, desc), fields, type, generate_desc, option_str(enum_options))
   end
+
+  defp option_str(nil), do: []
+  defp option_str(enum_options), do: Protobuf.EnumOptionsProcessor.options_str(enum_options)
 
   def generate_type(enum_options, desc) when not is_nil(enum_options) do
     field_values = Protobuf.EnumOptionsProcessor.generate_types(desc.name, desc.value, enum_options)

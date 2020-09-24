@@ -8,43 +8,72 @@ defmodule Protobuf.EnumOptionsProcessor do
   """
   @type options :: Brex.Elixirpb.EnumOptions.t
 
-  def validate_and_get_transformers(name, %Brex.Elixirpb.EnumOptions{} = struct) do
+  def validate_and_get_transformers(%Brex.Elixirpb.EnumOptions{} = struct) do
     struct
     |> Map.from_struct()
     |> Enum.flat_map(fn
-      {:lowercase, true} -> [{:lowercase, true}]
-      {:deprefix, true} -> [{:deprefix, cal_prefix(name)}]
-      {:atomize, true} -> [{:deprefix, cal_prefix(name)}, {:lowercase, true}]
+      {:lowercase, true} -> [:lowercase]
+      {:deprefix, true} -> [:deprefix]
+      {:atomize, true} -> [:deprefix, :lowercase]
       _ -> []
     end)
     |> Enum.sort()
     |> Enum.uniq()
   end
 
-  def cal_prefix(name) do
-    name |> Macro.underscore() |> Kernel.<>("_") |> String.upcase()
+  def cal_prefix(mod, fields) do
+    prefix = mod |> Macro.underscore() |> Kernel.<>("_") |> String.upcase()
+
+    is_prefixed? =
+      Enum.all?(fields, fn %{name: name} -> String.starts_with?(name, prefix) end)
+
+    if is_prefixed?, do: prefix, else: ""
   end
 
-  def generate_types(name, fields, options) do
-    transformers = validate_and_get_transformers(name, options)
+  def generate_types(mod, fields, options) do
+    transformers = validate_and_get_transformers(options)
 
-    # What if some fields aren't prefixed?
+    prefix = cal_prefix(mod, fields)
+
     fields
-    |> Enum.map(fn f -> ":#{transform(f.name, transformers, :backward)}" end)
+    |> Enum.map(fn f -> ":#{transform(f.name, prefix, transformers, :backward)}" end)
     |> Enum.join(" | ")
   end
 
-  defp transform(value, transforms, :forward) do
+  def options_str(options) do
+    options
+    |> validate_and_get_transformers()
+    |> Enum.map(&Protobuf.Protoc.Generator.Util.options_to_str([{:enum, &1}]))
+  end
+
+  def generate_mappings(mod, props, fields, options) do
+    transformers = validate_and_get_transformers(options)
+
+    IO.inspect(:stderr, {mod, props}, label: :up)
+
+
+    atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
+
+    string_or_num_to_atom =
+      for {fnum, %{name: name, name_atom: name_atom}} <- props,
+          key <- [fnum, name],
+          do: {key, name_atom},
+          into: %{}
+
+    {atom_to_num, string_or_num_to_atom}
+  end
+
+  defp transform(value, prefix, transforms, :forward) do
     Enum.reduce(transforms, value, fn
-      {:lowercase, _}, v -> String.upcase(v)
-      {:deprefix, prefix}, v -> String.replace_prefix(v, "", prefix)
+      :lowercase, v -> String.upcase(v)
+      :deprefix, v -> String.replace_prefix(v, "", prefix)
     end)
   end
 
-  defp transform(value, transforms, :backward) do
+  defp transform(value, prefix, transforms, :backward) do
     Enum.reduce(transforms, value, fn
-      {:lowercase, _}, v -> String.downcase(v)
-      {:deprefix, prefix}, v -> String.replace_prefix(v, prefix, "")
+      :lowercase, v -> String.downcase(v)
+      :deprefix, v -> String.replace_prefix(v, prefix, "")
     end)
   end
 end

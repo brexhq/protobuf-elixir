@@ -142,4 +142,39 @@ defmodule Protobuf.Protoc.IntegrationTest do
     assert Ext.MyMessage.new() |> Ext.MyMessage.encode() |> Ext.MyMessage.decode() ==
              Ext.MyMessage.new()
   end
+
+  test "enum options" do
+    msg =
+      Ext.EnumTestMessage.new(
+        pet: :A_CAT,
+        bet: :BIRD,
+        set: :set_horse,
+        flight_color: :color_invalid,
+      )
+
+      assert msg |> Ext.EnumTestMessage.encode() |> Ext.EnumTestMessage.decode() == %Ext.EnumTestMessage{
+        pet: :A_CAT,
+        bet: :BIRD,
+        set: :set_horse,
+        flight_color: :color_invalid,
+      }
+  end
+
+  test "enum options failure case" do
+      msg =
+      Ext.EnumTestMessage.new(
+        pet: :MY_PET_IS_A_CAT,
+        bet: :MY_BET_IS_A_BIRD,
+        set: :SET_HORSE,
+        flight_color: :TRAFFIC_FLIGHT_COLOR_INVALID,
+      )
+
+      assert msg |> Ext.EnumTestMessage.encode() |> Ext.EnumTestMessage.decode() == %Ext.EnumTestMessage{
+        pet: :MY_PET_IS_A_CAT,
+        bet: :MY_BET_IS_A_BIRD,
+        set: :SET_HORSE,
+        flight_color: :TRAFFIC_FLIGHT_COLOR_INVALID,
+        color: :TRAFFIC_LIGHT_COLOR_INVALID,
+      }
+  end
 end

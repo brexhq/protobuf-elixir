@@ -28,6 +28,16 @@ enum MyBetIsA {
   HORSE = 4;
 }
 
+enum MySetIsA {
+  option (brex.elixirpb.enum).lowercase = true;
+
+  MY_SET_IS_A_CAT = 0;
+  MY_SET_IS_A_BIRD = 1;
+  MY_SET_IS_A_DOG = 2;
+  MY_SET_IS_A_UNKNOWN = 3;
+  SET_HORSE = 4;
+}
+
 enum TrafficFlight {
   option (brex.elixirpb.enum).atomize = true;
 
@@ -41,9 +51,7 @@ enum TrafficFlight {
 message EnumTestMessage{
   MyPetIs pet = 1;
   MyBetIsA bet = 2;
-  TrafficFlight flight_color = 3;
-  TrafficLightColor color = 4;
-  TrafficLightColor color_lc = 5 [(brex.elixirpb.field).enum="lowercase"];
-  TrafficLightColor color_depr = 6 [(brex.elixirpb.field).enum="deprefix"];
-  TrafficLightColor color_atom = 7 [(brex.elixirpb.field).enum="atomize"];
+  MySetIsA set = 3;
+  TrafficFlight flight_color = 4;
+  TrafficLightColor color = 5;
 }
