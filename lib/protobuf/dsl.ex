@@ -36,7 +36,7 @@ defmodule Protobuf.DSL do
   end
 
   defmacro option([{option, value}]) do
-    #option (brex.elixirpb.enum).deprefix = true;
+    # option (brex.elixirpb.enum).deprefix = true;
     quote do
       @msg_options {unquote(option), unquote(value)}
     end
@@ -100,13 +100,17 @@ defmodule Protobuf.DSL do
     end
   end
 
-  defp def_enum_functions(%{syntax: syntax, enum?: true, field_props: props, options: enum_options} = desc, fields, module, custom_options) do
+  defp def_enum_functions(
+         %{syntax: syntax, enum?: true, field_props: props, options: enum_options},
+         fields,
+         module,
+         custom_options
+       ) do
     if syntax == :proto3 do
       unless props[0], do: raise("The first enum value must be zero in proto3")
     end
 
-
-    {atom_to_num, string_or_num_to_atom} =
+    {atom_to_num, string_or_num_to_atom, extra_quotes} =
       if is_nil(enum_options) or is_nil(custom_options) do
         atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
 
@@ -116,21 +120,24 @@ defmodule Protobuf.DSL do
               do: {key, name_atom},
               into: %{}
 
-        {atom_to_num, string_or_num_to_atom}
+        prefix =
+          module
+          |> Protobuf.Protoc.Generator.Util.mod_to_name()
+          |> Kernel.<>("_")
+          |> String.upcase()
+
+        is_prefixed? =
+          Enum.all?(props, fn {_, %{name: name}} -> String.starts_with?(name, prefix) end)
+
+        extra_quote =
+          quote do
+            def prefix(), do: unquote(if is_prefixed?, do: prefix, else: "")
+          end
+
+        {atom_to_num, string_or_num_to_atom, [extra_quote]}
       else
-        IO.inspect(:stderr, {enum_options, custom_options}, label: :theopts)
-
-        Protobuf.EnumOptionsProcessor.generate_mappings(module, props, fields, enum_options)
+        Protobuf.EnumOptionsProcessor.generate_mappings(module, props, enum_options)
       end
-
-    prefix =
-      module
-      |> Protobuf.Protoc.Generator.Util.mod_to_name()
-      |> Kernel.<>("_")
-      |> String.upcase()
-
-    is_prefixed? =
-      Enum.all?(props, fn {_, %{name: name}} -> String.starts_with?(name, prefix) end)
 
     Enum.map(atom_to_num, fn {name_atom, fnum} ->
       quote do
@@ -153,14 +160,11 @@ defmodule Protobuf.DSL do
         end,
         quote do
           def __reverse_mapping__(), do: unquote(Macro.escape(string_or_num_to_atom))
-        end,
-        quote do
-          def prefix(), do: unquote(if is_prefixed?, do: prefix, else: "")
         end
-      ]
+      ] ++ extra_quotes
   end
 
-  defp def_enum_functions(desc, _, _, _), do: nil
+  defp def_enum_functions(_, _, _, _), do: nil
 
   defp def_extension_functions() do
     quote do

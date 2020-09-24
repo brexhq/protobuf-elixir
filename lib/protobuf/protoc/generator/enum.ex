@@ -14,17 +14,26 @@ defmodule Protobuf.Protoc.Generator.Enum do
     generate_desc = if ctx.gen_descriptors?, do: desc, else: nil
     type = generate_type(enum_options, desc)
 
-    Protobuf.Protoc.Template.enum(msg_name, msg_opts(ctx, desc), fields, type, generate_desc, option_str(enum_options))
+    Protobuf.Protoc.Template.enum(
+      msg_name,
+      msg_opts(ctx, desc),
+      fields,
+      type,
+      generate_desc,
+      option_str(enum_options)
+    )
   end
 
   defp option_str(nil), do: []
   defp option_str(enum_options), do: Protobuf.EnumOptionsProcessor.options_str(enum_options)
 
   def generate_type(enum_options, desc) when not is_nil(enum_options) do
-    field_values = Protobuf.EnumOptionsProcessor.generate_types(desc.name, desc.value, enum_options)
+    field_values =
+      Protobuf.EnumOptionsProcessor.generate_types(desc.name, desc.value, enum_options)
 
     "@type t :: integer | " <> field_values
   end
+
   def generate_type(_enum_options, %{value: fields}) do
     field_values =
       fields
@@ -41,6 +50,7 @@ defmodule Protobuf.Protoc.Generator.Enum do
   def cal_options(%{custom_field_options?: true}, %{options: options}) when not is_nil(options) do
     Google.Protobuf.EnumOptions.get_extension(options, Brex.Elixirpb.PbExtension, :enum)
   end
+
   def cal_options(_ctx, _desc), do: nil
 
   defp msg_opts(%{syntax: syntax, custom_field_options?: custom_field_options}, _desc) do
@@ -52,6 +62,7 @@ defmodule Protobuf.Protoc.Generator.Enum do
       else
         opts
       end
+
     str = Util.options_to_str(opts)
     ", " <> str
   end

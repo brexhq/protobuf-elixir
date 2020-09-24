@@ -24,7 +24,6 @@ defmodule Protobuf.Protoc.Generator.EnumTest do
     assert msg =~ "field :A, 0\n  field :B, 1\n"
   end
 
-
   test "generate/2 generates enum type messages with custom options" do
     ctx = %Context{package: "", custom_field_options?: true}
 

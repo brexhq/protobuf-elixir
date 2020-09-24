@@ -6,7 +6,7 @@ defmodule Protobuf.EnumOptionsProcessor do
   @typedoc """
   Keyword list of field options. Right now only [extype: mytype].
   """
-  @type options :: Brex.Elixirpb.EnumOptions.t
+  @type options :: Brex.Elixirpb.EnumOptions.t()
 
   def validate_and_get_transformers_opts(opts) do
     opts
@@ -37,20 +37,9 @@ defmodule Protobuf.EnumOptionsProcessor do
     prefix = mod |> Macro.underscore() |> Kernel.<>("_") |> String.upcase()
 
     is_prefixed? =
-      Enum.all?(fields, fn %{name: name} -> String.starts_with?(name, prefix) end)
-
-      IO.inspect(:stderr, {prefix, is_prefixed?}, label: :prefix)
-
-    if is_prefixed?, do: prefix, else: ""
-  end
-
-  def cal_prefix_atom(mod, fields) do
-    prefix = mod |> Protobuf.Protoc.Generator.Util.mod_to_name() |> Kernel.<>("_") |> String.upcase()
-
-    is_prefixed? =
-      Enum.all?(fields, fn {_num, %{name: name}} -> IO.inspect({name, prefix}, label: :pls) ; String.starts_with?(name, prefix) end)
-
-      IO.inspect(:stderr, {prefix, is_prefixed?}, label: :prefix)
+      Enum.all?(fields, fn
+        %{name: name} -> String.starts_with?(name, prefix)
+      end)
 
     if is_prefixed?, do: prefix, else: ""
   end
@@ -71,19 +60,52 @@ defmodule Protobuf.EnumOptionsProcessor do
     |> Enum.map(&Protobuf.Protoc.Generator.Util.options_to_str([{:enum, &1}]))
   end
 
-  def generate_mappings(mod, props, fields, options) do
+  def generate_mappings(mod, props, options) do
     transformers = validate_and_get_transformers_opts(options)
-    prefix = cal_prefix_atom(mod, props)
 
-    atom_to_num = for {fnum, %{name: name, name_atom: name_atom}} <- props, do: {transform(name, prefix, transformers, :backward) |> String.to_atom(), fnum}, into: %{}
+    field_props = Enum.map(props, fn {_fnum, field_props} -> field_props end)
 
-    string_or_num_to_atom =
-      for {fnum, %{name: name, name_atom: name_atom}} <- props,
-          key <- [fnum, name],
-          do: {key, transform(name, prefix, transformers, :backward) |> String.to_atom()},
+    prefix =
+      mod
+      |> Protobuf.Protoc.Generator.Util.mod_to_name()
+      |> cal_prefix(field_props)
+
+    original_to_transformed =
+      Enum.into(props, %{}, fn {fnum, %{name: name}} ->
+        transformed_name = transform(name, prefix, transformers, :backward)
+        transformed_name_atom = String.to_atom(transformed_name)
+        {name, %{fnum: fnum, name: transformed_name, name_atom: transformed_name_atom}}
+      end)
+
+    atom_to_num =
+      for {_, %{fnum: fnum, name_atom: tname_atom}} <- original_to_transformed,
+          do: {tname_atom, fnum},
           into: %{}
 
-    {atom_to_num, string_or_num_to_atom}
+    string_or_num_to_atom =
+      for {_, %{fnum: fnum, name: tname, name_atom: tname_atom}} <- original_to_transformed,
+          key <- [fnum, tname],
+          do: {key, tname_atom},
+          into: %{}
+
+    accessor_funs =
+      if :lowercase in transformers do
+        Enum.map(original_to_transformed, fn {_, %{name_atom: tname_atom}} ->
+          quote do
+            def unquote(tname_atom)(), do: unquote(tname_atom)
+          end
+        end)
+      else
+        []
+      end
+
+    prefix_fun = [
+      quote do
+        def prefix(), do: unquote(prefix)
+      end
+    ]
+
+    {atom_to_num, string_or_num_to_atom, accessor_funs ++ prefix_fun}
   end
 
   defp transform(value, prefix, transforms, :forward) do

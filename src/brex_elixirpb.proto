@@ -16,7 +16,7 @@ message FieldOptions {
   // Specifies an elixir type to generate for this field. This will override usual type.
   optional string extype = 1;
   // Specifies options to lowercase or deprefix enums.
-  optional string enum = 2 [deprecated=true];
+  optional string enum = 2;
 }
 
 extend google.protobuf.FieldOptions {
