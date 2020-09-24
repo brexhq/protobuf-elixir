@@ -8,6 +8,18 @@ defmodule Protobuf.EnumOptionsProcessor do
   """
   @type options :: Brex.Elixirpb.EnumOptions.t
 
+  def validate_and_get_transformers_opts(opts) do
+    opts
+    |> Enum.flat_map(fn
+      {:enum, :lowercase} -> [:lowercase]
+      {:enum, :deprefix} -> [:deprefix]
+      {:enum, :atomize} -> [:deprefix, :lowercase]
+      _ -> []
+    end)
+    |> Enum.sort()
+    |> Enum.uniq()
+  end
+
   def validate_and_get_transformers(%Brex.Elixirpb.EnumOptions{} = struct) do
     struct
     |> Map.from_struct()
@@ -26,6 +38,19 @@ defmodule Protobuf.EnumOptionsProcessor do
 
     is_prefixed? =
       Enum.all?(fields, fn %{name: name} -> String.starts_with?(name, prefix) end)
+
+      IO.inspect(:stderr, {prefix, is_prefixed?}, label: :prefix)
+
+    if is_prefixed?, do: prefix, else: ""
+  end
+
+  def cal_prefix_atom(mod, fields) do
+    prefix = mod |> Protobuf.Protoc.Generator.Util.mod_to_name() |> Kernel.<>("_") |> String.upcase()
+
+    is_prefixed? =
+      Enum.all?(fields, fn {_num, %{name: name}} -> IO.inspect({name, prefix}, label: :pls) ; String.starts_with?(name, prefix) end)
+
+      IO.inspect(:stderr, {prefix, is_prefixed?}, label: :prefix)
 
     if is_prefixed?, do: prefix, else: ""
   end
@@ -47,17 +72,15 @@ defmodule Protobuf.EnumOptionsProcessor do
   end
 
   def generate_mappings(mod, props, fields, options) do
-    transformers = validate_and_get_transformers(options)
+    transformers = validate_and_get_transformers_opts(options)
+    prefix = cal_prefix_atom(mod, props)
 
-    IO.inspect(:stderr, {mod, props}, label: :up)
-
-
-    atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
+    atom_to_num = for {fnum, %{name: name, name_atom: name_atom}} <- props, do: {transform(name, prefix, transformers, :backward) |> String.to_atom(), fnum}, into: %{}
 
     string_or_num_to_atom =
       for {fnum, %{name: name, name_atom: name_atom}} <- props,
           key <- [fnum, name],
-          do: {key, name_atom},
+          do: {key, transform(name, prefix, transformers, :backward) |> String.to_atom()},
           into: %{}
 
     {atom_to_num, string_or_num_to_atom}

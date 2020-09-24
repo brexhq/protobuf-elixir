@@ -38,7 +38,7 @@ defmodule Protobuf.DSL do
   defmacro option([{option, value}]) do
     #option (brex.elixirpb.enum).deprefix = true;
     quote do
-      @options {unquote(option), unquote(value)}
+      @msg_options {unquote(option), unquote(value)}
     end
   end
 
@@ -53,7 +53,7 @@ defmodule Protobuf.DSL do
       |> gen_extension_props()
 
     extensions = Module.get_attribute(env.module, :extensions)
-    msg_options = Module.get_attribute(env.module, :options)
+    msg_options = Module.get_attribute(env.module, :msg_options)
     syntax = Keyword.get(options, :syntax, :proto2)
     oneofs = Module.get_attribute(env.module, :oneofs)
     msg_props = generate_msg_props(fields, oneofs, extensions, options, msg_options)
@@ -100,13 +100,14 @@ defmodule Protobuf.DSL do
     end
   end
 
-  defp def_enum_functions(%{syntax: syntax, enum?: true, field_props: props, options: options} = desc, fields, module, custom_options) do
+  defp def_enum_functions(%{syntax: syntax, enum?: true, field_props: props, options: enum_options} = desc, fields, module, custom_options) do
     if syntax == :proto3 do
       unless props[0], do: raise("The first enum value must be zero in proto3")
     end
 
+
     {atom_to_num, string_or_num_to_atom} =
-      if is_nil(options) or is_nil(custom_options) do
+      if is_nil(enum_options) or is_nil(custom_options) do
         atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
 
         string_or_num_to_atom =
@@ -117,10 +118,10 @@ defmodule Protobuf.DSL do
 
         {atom_to_num, string_or_num_to_atom}
       else
-        Protobuf.EnumOptionsProcessor.generate_mappings(module, props, fields, options)
-      end
+        IO.inspect(:stderr, {enum_options, custom_options}, label: :theopts)
 
-    IO.inspect(atom_to_num, label: "whattt")
+        Protobuf.EnumOptionsProcessor.generate_mappings(module, props, fields, enum_options)
+      end
 
     prefix =
       module
@@ -205,7 +206,7 @@ defmodule Protobuf.DSL do
       enum?: Keyword.get(options, :enum) == true,
       map?: Keyword.get(options, :map) == true,
       extension_range: extensions,
-      options: []
+      options: msg_options
     }
   end
 
