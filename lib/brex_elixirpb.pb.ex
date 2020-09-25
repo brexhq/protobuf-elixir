@@ -9,7 +9,7 @@ defmodule Brex.Elixirpb.FieldOptions do
   defstruct [:extype, :enum]
 
   field :extype, 1, optional: true, type: :string
-  field :enum, 2, optional: true, type: :string
+  field :enum, 2, optional: true, type: :string, deprecated: true
 end
 
 defmodule Brex.Elixirpb.EnumOptions do

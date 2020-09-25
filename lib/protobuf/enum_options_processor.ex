@@ -8,7 +8,7 @@ defmodule Protobuf.EnumOptionsProcessor do
   """
   @type options :: Brex.Elixirpb.EnumOptions.t()
 
-  def validate_and_get_transformers_opts(opts) do
+  def validate_and_get_transformers(opts) do
     opts
     |> Enum.flat_map(fn
       {:enum, :lowercase} -> [:lowercase]
@@ -20,17 +20,18 @@ defmodule Protobuf.EnumOptionsProcessor do
     |> Enum.uniq()
   end
 
-  def validate_and_get_transformers(%Brex.Elixirpb.EnumOptions{} = struct) do
+  def validate_opts(%Brex.Elixirpb.EnumOptions{} = struct) do
     struct
     |> Map.from_struct()
     |> Enum.flat_map(fn
-      {:lowercase, true} -> [:lowercase]
-      {:deprefix, true} -> [:deprefix]
-      {:atomize, true} -> [:deprefix, :lowercase]
-      _ -> []
+      {:lowercase, true} -> [enum: :lowercase]
+      {:deprefix, true} -> [enum: :deprefix]
+      {:atomize, true} -> [enum: :atomize]
+      {:lowercase, _} -> []
+      {:deprefix, _} -> []
+      {:atomize, _} -> []
+      z -> raise "Unknown Enum Option #{z}"
     end)
-    |> Enum.sort()
-    |> Enum.uniq()
   end
 
   def cal_prefix(mod, fields) do
@@ -45,7 +46,10 @@ defmodule Protobuf.EnumOptionsProcessor do
   end
 
   def generate_types(mod, fields, options) do
-    transformers = validate_and_get_transformers(options)
+    transformers =
+      options
+      |> validate_opts()
+      |> validate_and_get_transformers()
 
     prefix = cal_prefix(mod, fields)
 
@@ -56,12 +60,12 @@ defmodule Protobuf.EnumOptionsProcessor do
 
   def options_str(options) do
     options
-    |> validate_and_get_transformers()
-    |> Enum.map(&Protobuf.Protoc.Generator.Util.options_to_str([{:enum, &1}]))
+    |> validate_opts()
+    |> Enum.map(fn {k, v} -> "#{k}: #{Protobuf.Protoc.Generator.Util.print(v)}" end)
   end
 
   def generate_mappings(mod, props, options) do
-    transformers = validate_and_get_transformers_opts(options)
+    transformers = validate_and_get_transformers(options)
 
     field_props = Enum.map(props, fn {_fnum, field_props} -> field_props end)
 

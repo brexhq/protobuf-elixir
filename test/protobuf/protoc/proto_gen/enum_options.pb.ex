@@ -58,8 +58,7 @@ defmodule Ext.TrafficFlight do
   @moduledoc false
   use Protobuf, custom_field_options?: true, enum: true, syntax: :proto3
 
-  option enum: :deprefix
-  option enum: :lowercase
+  option enum: :atomize
 
   @type t :: integer | :color_invalid | :color_unset | :color_green | :color_yellow | :color_red
 

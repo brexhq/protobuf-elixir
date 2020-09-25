@@ -129,17 +129,17 @@ defmodule Protobuf.DSL do
         is_prefixed? =
           Enum.all?(props, fn {_, %{name: name}} -> String.starts_with?(name, prefix) end)
 
-        extra_quote =
+        prefix_fun =
           quote do
             def prefix(), do: unquote(if is_prefixed?, do: prefix, else: "")
           end
 
-        {atom_to_num, string_or_num_to_atom, [extra_quote]}
+        {atom_to_num, string_or_num_to_atom, [prefix_fun]}
       else
         Protobuf.EnumOptionsProcessor.generate_mappings(module, props, enum_options)
       end
 
-    Enum.map(atom_to_num, fn {name_atom, fnum} ->
+    x = Enum.map(atom_to_num, fn {name_atom, fnum} ->
       quote do
         def value(unquote(name_atom)), do: unquote(fnum)
       end
@@ -162,6 +162,9 @@ defmodule Protobuf.DSL do
           def __reverse_mapping__(), do: unquote(Macro.escape(string_or_num_to_atom))
         end
       ] ++ extra_quotes
+
+      Macro.to_string(x) |> IO.puts()
+      x
   end
 
   defp def_enum_functions(_, _, _, _), do: nil
@@ -210,7 +213,7 @@ defmodule Protobuf.DSL do
       enum?: Keyword.get(options, :enum) == true,
       map?: Keyword.get(options, :map) == true,
       extension_range: extensions,
-      options: msg_options
+      options: (if msg_options == [], do: nil, else: msg_options)
     }
   end
 
