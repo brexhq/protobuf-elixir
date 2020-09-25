@@ -110,9 +110,11 @@ defmodule Protobuf.DSL do
       unless props[0], do: raise("The first enum value must be zero in proto3")
     end
 
-    {atom_to_num, string_or_num_to_atom, extra_quotes} =
+    {atom_to_num, num_to_atom, string_or_num_to_atom, extra_enum_defs} =
       if is_nil(enum_options) or is_nil(custom_options) do
         atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
+
+        num_to_atom = for {fnum, %{name_atom: name_atom}} <- props, do: {fnum, name_atom}
 
         string_or_num_to_atom =
           for {fnum, %{name: name, name_atom: name_atom}} <- props,
@@ -134,12 +136,12 @@ defmodule Protobuf.DSL do
             def prefix(), do: unquote(if is_prefixed?, do: prefix, else: "")
           end
 
-        {atom_to_num, string_or_num_to_atom, [prefix_fun]}
+        {atom_to_num, num_to_atom, string_or_num_to_atom, [prefix_fun]}
       else
         Protobuf.EnumOptionsProcessor.generate_mappings(module, props, enum_options)
       end
 
-    x = Enum.map(atom_to_num, fn {name_atom, fnum} ->
+    Enum.map(atom_to_num, fn {name_atom, fnum} ->
       quote do
         def value(unquote(name_atom)), do: unquote(fnum)
       end
@@ -149,7 +151,7 @@ defmodule Protobuf.DSL do
           def value(v) when is_integer(v), do: v
         end
       ] ++
-      Enum.map(atom_to_num, fn {name_atom, fnum} ->
+      Enum.map(num_to_atom, fn {fnum, name_atom} ->
         quote do
           def key(unquote(fnum)), do: unquote(name_atom)
         end
@@ -161,10 +163,7 @@ defmodule Protobuf.DSL do
         quote do
           def __reverse_mapping__(), do: unquote(Macro.escape(string_or_num_to_atom))
         end
-      ] ++ extra_quotes
-
-      Macro.to_string(x) |> IO.puts()
-      x
+      ] ++ extra_enum_defs
   end
 
   defp def_enum_functions(_, _, _, _), do: nil

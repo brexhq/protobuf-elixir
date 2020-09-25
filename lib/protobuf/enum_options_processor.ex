@@ -86,11 +86,18 @@ defmodule Protobuf.EnumOptionsProcessor do
           do: {tname_atom, fnum},
           into: %{}
 
+    num_to_atom = for {_, %{fnum: fnum, name_atom: name_atom}} <- original_to_transformed, do: {fnum, name_atom}
+
     string_or_num_to_atom =
       for {_, %{fnum: fnum, name: tname, name_atom: tname_atom}} <- original_to_transformed,
           key <- [fnum, tname],
           do: {key, tname_atom},
           into: %{}
+
+      transformation_mapping =
+        Enum.into(props, %{}, fn {_, %{name: name, name_atom: old_name_atom}} ->
+          {old_name_atom, original_to_transformed[name][:name_atom]}
+        end)
 
     accessor_funs =
       if :lowercase in transformers do
@@ -101,15 +108,17 @@ defmodule Protobuf.EnumOptionsProcessor do
         end)
       else
         []
-      end
-
-    prefix_fun = [
+      end ++
+      [
       quote do
         def prefix(), do: unquote(prefix)
+      end,
+      quote do
+        def __transformation_mapping__, do: unquote(Macro.escape(transformation_mapping))
       end
-    ]
+      ]
 
-    {atom_to_num, string_or_num_to_atom, accessor_funs ++ prefix_fun}
+    {atom_to_num, num_to_atom, string_or_num_to_atom, accessor_funs}
   end
 
   defp transform(value, prefix, transforms, :forward) do
