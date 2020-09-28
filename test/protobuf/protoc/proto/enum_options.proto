@@ -17,17 +17,6 @@ enum MyPetIs {
   MY_PET_IS_A_UNKNOWN = 3;
 }
 
-// one not prefixed
-enum MyBetIsA {
-  option (brex.elixirpb.enum).deprefix = true;
-
-  MY_BET_IS_A_CAT = 0;
-  MY_BET_IS_A_BIRD = 1;
-  MY_BET_IS_A_DOG = 2;
-  MY_BET_IS_A_UNKNOWN = 3;
-  HORSE = 4;
-}
-
 enum MySetIsA {
   option (brex.elixirpb.enum).lowercase = true;
 
@@ -50,8 +39,7 @@ enum TrafficFlight {
 
 message EnumTestMessage{
   MyPetIs pet = 1;
-  MyBetIsA bet = 2;
-  MySetIsA set = 3;
-  TrafficFlight flight_color = 4;
-  TrafficLightColor color = 5;
+  MySetIsA set = 2;
+  TrafficFlight flight_color = 3;
+  TrafficLightColor color = 4;
 }

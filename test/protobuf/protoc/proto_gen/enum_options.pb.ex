@@ -12,27 +12,6 @@ defmodule Ext.MyPetIs do
   field :MY_PET_IS_A_UNKNOWN, 3
 end
 
-defmodule Ext.MyBetIsA do
-  @moduledoc false
-  use Protobuf, custom_field_options?: true, enum: true, syntax: :proto3
-
-  option enum: :deprefix
-
-  @type t ::
-          integer
-          | :MY_BET_IS_A_CAT
-          | :MY_BET_IS_A_BIRD
-          | :MY_BET_IS_A_DOG
-          | :MY_BET_IS_A_UNKNOWN
-          | :HORSE
-
-  field :MY_BET_IS_A_CAT, 0
-  field :MY_BET_IS_A_BIRD, 1
-  field :MY_BET_IS_A_DOG, 2
-  field :MY_BET_IS_A_UNKNOWN, 3
-  field :HORSE, 4
-end
-
 defmodule Ext.MySetIsA do
   @moduledoc false
   use Protobuf, custom_field_options?: true, enum: true, syntax: :proto3
@@ -75,16 +54,14 @@ defmodule Ext.EnumTestMessage do
 
   @type t :: %__MODULE__{
           pet: Ext.MyPetIs.t(),
-          bet: Ext.MyBetIsA.t(),
           set: Ext.MySetIsA.t(),
           flight_color: Ext.TrafficFlight.t(),
           color: Ext.TrafficLightColor.t()
         }
-  defstruct [:pet, :bet, :set, :flight_color, :color]
+  defstruct [:pet, :set, :flight_color, :color]
 
   field :pet, 1, type: Ext.MyPetIs, enum: true
-  field :bet, 2, type: Ext.MyBetIsA, enum: true
-  field :set, 3, type: Ext.MySetIsA, enum: true
-  field :flight_color, 4, type: Ext.TrafficFlight, enum: true, json_name: "flightColor"
-  field :color, 5, type: Ext.TrafficLightColor, enum: true
+  field :set, 2, type: Ext.MySetIsA, enum: true
+  field :flight_color, 3, type: Ext.TrafficFlight, enum: true, json_name: "flightColor"
+  field :color, 4, type: Ext.TrafficLightColor, enum: true
 end

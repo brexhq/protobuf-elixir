@@ -8,7 +8,7 @@ defmodule Protobuf.EnumOptionsProcessor do
   """
   @type options :: Brex.Elixirpb.EnumOptions.t()
 
-  def validate_and_get_transformers(opts) do
+  def get_transformers(opts) do
     opts
     |> Enum.flat_map(fn
       {:enum, :lowercase} -> [:lowercase]
@@ -20,38 +20,66 @@ defmodule Protobuf.EnumOptionsProcessor do
     |> Enum.uniq()
   end
 
-  def validate_opts(%Brex.Elixirpb.EnumOptions{} = struct) do
+  def validate_opts!(%Brex.Elixirpb.EnumOptions{} = struct) do
     struct
     |> Map.from_struct()
     |> Enum.flat_map(fn
-      {:lowercase, true} -> [enum: :lowercase]
-      {:deprefix, true} -> [enum: :deprefix]
-      {:atomize, true} -> [enum: :atomize]
-      {:lowercase, _} -> []
-      {:deprefix, _} -> []
-      {:atomize, _} -> []
-      z -> raise "Unknown Enum Option #{z}"
+      {:lowercase, true} ->
+        [enum: :lowercase]
+
+      {:deprefix, true} ->
+        [enum: :deprefix]
+
+      {:atomize, true} ->
+        [enum: :atomize]
+
+      {t, nil} when t in [:lowercase, :deprefix, :atomize] ->
+        []
+
+      {t, false} when t in [:lowercase, :deprefix, :atomize] ->
+        []
+
+      z ->
+        raise "Unknown Enum Option #{inspect(z)}! " <>
+                "Possible Enum Options are atomize, deprefix, and lowercase."
     end)
   end
 
-  def cal_prefix(mod, fields) do
-    prefix = mod |> Macro.underscore() |> Kernel.<>("_") |> String.upcase()
+  def validate_opts!(v) do
+    raise "Unknown Custom Enum Option: #{inspect(v)}"
+  end
 
-    is_prefixed? =
-      Enum.all?(fields, fn
-        %{name: name} -> String.starts_with?(name, prefix)
-      end)
+  def cal_prefix!(mod, fields, transformers) do
+    if :deprefix in transformers do
+      prefix =
+        mod
+        |> Macro.underscore()
+        |> Kernel.<>("_")
+        |> String.upcase()
 
-    if is_prefixed?, do: prefix, else: ""
+      is_prefixed? =
+        Enum.all?(fields, fn
+          %{name: name} -> String.starts_with?(name, prefix)
+        end)
+
+      if is_prefixed? do
+        prefix
+      else
+        raise "Atomize or Deprefix custom enum option present, but no consistent prefix found for " <>
+                "#{inspect(mod)}!"
+      end
+    else
+      ""
+    end
   end
 
   def generate_types(mod, fields, options) do
     transformers =
       options
-      |> validate_opts()
-      |> validate_and_get_transformers()
+      |> validate_opts!()
+      |> get_transformers()
 
-    prefix = cal_prefix(mod, fields)
+    prefix = cal_prefix!(mod, fields, transformers)
 
     fields
     |> Enum.map(fn f -> ":#{transform(f.name, prefix, transformers, :backward)}" end)
@@ -60,25 +88,28 @@ defmodule Protobuf.EnumOptionsProcessor do
 
   def options_str(options) do
     options
-    |> validate_opts()
+    |> validate_opts!()
     |> Enum.map(fn {k, v} -> "#{k}: #{Protobuf.Protoc.Generator.Util.print(v)}" end)
   end
 
-  def generate_mappings(mod, props, options) do
-    transformers = validate_and_get_transformers(options)
+  def generate_mappings(mod, props, fields, options) do
+    transformers = get_transformers(options)
 
     field_props = Enum.map(props, fn {_fnum, field_props} -> field_props end)
 
     prefix =
       mod
-      |> Protobuf.Protoc.Generator.Util.mod_to_name()
-      |> cal_prefix(field_props)
+      |> Atom.to_string()
+      |> String.split(".")
+      |> List.last()
+      |> cal_prefix!(field_props, transformers)
 
     original_to_transformed =
-      Enum.into(props, %{}, fn {fnum, %{name: name}} ->
+      Enum.into(fields, %{}, fn {name_atom, fnum, _} ->
+        name = Atom.to_string(name_atom)
         transformed_name = transform(name, prefix, transformers, :backward)
         transformed_name_atom = String.to_atom(transformed_name)
-        {name, %{fnum: fnum, name: transformed_name, name_atom: transformed_name_atom}}
+        {name_atom, %{fnum: fnum, name: transformed_name, name_atom: transformed_name_atom}}
       end)
 
     atom_to_num =
@@ -86,18 +117,21 @@ defmodule Protobuf.EnumOptionsProcessor do
           do: {tname_atom, fnum},
           into: %{}
 
-    num_to_atom = for {_, %{fnum: fnum, name_atom: name_atom}} <- original_to_transformed, do: {fnum, name_atom}
+    num_to_atom =
+      for {_, %{fnum: fnum, name_atom: name_atom}} <- original_to_transformed,
+          do: {fnum, name_atom}
 
     string_or_num_to_atom =
-      for {_, %{fnum: fnum, name: tname, name_atom: tname_atom}} <- original_to_transformed,
-          key <- [fnum, tname],
-          do: {key, tname_atom},
+      for {fnum, %{name_atom: old_name_atom}} <- props,
+          %{name_atom: new_name_atom, name: new_name} = original_to_transformed[old_name_atom],
+          key <- [fnum, new_name],
+          do: {key, new_name_atom},
           into: %{}
 
-      transformation_mapping =
-        Enum.into(props, %{}, fn {_, %{name: name, name_atom: old_name_atom}} ->
-          {old_name_atom, original_to_transformed[name][:name_atom]}
-        end)
+    transformation_mapping =
+      Enum.into(original_to_transformed, %{}, fn {old_name_atom, %{name_atom: new_name_atom}} ->
+        {old_name_atom, new_name_atom}
+      end)
 
     accessor_funs =
       if :lowercase in transformers do
@@ -109,14 +143,14 @@ defmodule Protobuf.EnumOptionsProcessor do
       else
         []
       end ++
-      [
-      quote do
-        def prefix(), do: unquote(prefix)
-      end,
-      quote do
-        def __transformation_mapping__, do: unquote(Macro.escape(transformation_mapping))
-      end
-      ]
+        [
+          quote do
+            def prefix(), do: unquote(prefix)
+          end,
+          quote do
+            def __transformation_mapping__, do: unquote(Macro.escape(transformation_mapping))
+          end
+        ]
 
     {atom_to_num, num_to_atom, string_or_num_to_atom, accessor_funs}
   end

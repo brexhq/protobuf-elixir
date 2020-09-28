@@ -138,7 +138,7 @@ defmodule Protobuf.DSL do
 
         {atom_to_num, num_to_atom, string_or_num_to_atom, [prefix_fun]}
       else
-        Protobuf.EnumOptionsProcessor.generate_mappings(module, props, enum_options)
+        Protobuf.EnumOptionsProcessor.generate_mappings(module, props, fields, enum_options)
       end
 
     Enum.map(atom_to_num, fn {name_atom, fnum} ->
@@ -212,7 +212,7 @@ defmodule Protobuf.DSL do
       enum?: Keyword.get(options, :enum) == true,
       map?: Keyword.get(options, :map) == true,
       extension_range: extensions,
-      options: (if msg_options == [], do: nil, else: msg_options)
+      options: if(msg_options == [], do: nil, else: msg_options)
     }
   end
 
