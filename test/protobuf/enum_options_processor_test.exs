@@ -167,17 +167,19 @@ defmodule Protobuf.EnumOptionsProcessorTest do
          fnum: 3,
          name: "MY_PREFIX_CAN_TREE",
          name_atom: :MY_PREFIX_CAN_TREE
-       }},
-      {3,
-       %Protobuf.FieldProps{
-         fnum: 3,
-         name: "MY_PREFIX_CAN_TEE",
-         name_atom: :MY_PREFIX_CAN_TEE
        }}
     ]
 
+    fields = [
+      {:MY_PREFIX_CAN_SEE, 0, []},
+      {:MY_PREFIX_CAN_BEE, 1, []},
+      {:MY_PREFIX_CAN_KNEE, 2, []},
+      {:MY_PREFIX_CAN_TREE, 3, []},
+      {:MY_PREFIX_CAN_TEE, 3, []}
+    ]
+
     {atom_to_num, num_to_atom, string_or_num_to_atom, _accessor_funs} =
-      EnumOptionsProcessor.generate_mappings(A.B.MyPrefix, props,
+      EnumOptionsProcessor.generate_mappings(A.B.MyPrefix, props, fields,
         enum: :atomize,
         enum: :deprefix,
         enum: :lowercase
@@ -207,7 +209,6 @@ defmodule Protobuf.EnumOptionsProcessorTest do
              "can_bee" => :can_bee,
              "can_knee" => :can_knee,
              "can_see" => :can_see,
-             "can_tee" => :can_tee,
              "can_tree" => :can_tree
            } == string_or_num_to_atom
   end
