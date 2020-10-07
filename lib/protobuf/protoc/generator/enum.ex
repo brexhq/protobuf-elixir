@@ -46,6 +46,7 @@ defmodule Protobuf.Protoc.Generator.Enum do
     ":#{f.name}, #{f.number}"
   end
 
+  # cal_ stands for calculate
   def cal_options(%{custom_field_options?: true}, %{options: options}) when not is_nil(options) do
     Google.Protobuf.EnumOptions.get_extension(options, Brex.Elixirpb.PbExtension, :enum)
   end
@@ -57,6 +58,10 @@ defmodule Protobuf.Protoc.Generator.Enum do
 
     opts =
       if custom_field_options do
+        # When you compile .proto files into .pb.ex files, there's a
+        # Brex-specific flag called "custom_field_options" that turns on or off
+        # Brex's custom option handling. At first it was only being used for
+        # field options, but now it's used for field, enum, and file options.
         Map.put(opts, :custom_field_options?, true)
       else
         opts

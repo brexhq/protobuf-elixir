@@ -112,31 +112,7 @@ defmodule Protobuf.DSL do
 
     {atom_to_num, num_to_atom, string_or_num_to_atom, extra_enum_defs} =
       if is_nil(enum_options) or is_nil(custom_options) do
-        atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
-
-        num_to_atom = for {fnum, %{name_atom: name_atom}} <- props, do: {fnum, name_atom}
-
-        string_or_num_to_atom =
-          for {fnum, %{name: name, name_atom: name_atom}} <- props,
-              key <- [fnum, name],
-              do: {key, name_atom},
-              into: %{}
-
-        prefix =
-          module
-          |> Protobuf.Protoc.Generator.Util.mod_to_name()
-          |> Kernel.<>("_")
-          |> String.upcase()
-
-        is_prefixed? =
-          Enum.all?(props, fn {_, %{name: name}} -> String.starts_with?(name, prefix) end)
-
-        prefix_fun =
-          quote do
-            def prefix(), do: unquote(if is_prefixed?, do: prefix, else: "")
-          end
-
-        {atom_to_num, num_to_atom, string_or_num_to_atom, [prefix_fun]}
+        use_standard_mappings(props, fields, module)
       else
         Protobuf.EnumOptionsProcessor.generate_mappings(module, props, fields, enum_options)
       end
@@ -167,6 +143,34 @@ defmodule Protobuf.DSL do
   end
 
   defp def_enum_functions(_, _, _, _), do: nil
+
+  defp use_standard_mappings(props, fields, module) do
+    atom_to_num = for {name_atom, fnum, _opts} <- fields, do: {name_atom, fnum}, into: %{}
+
+    num_to_atom = for {fnum, %{name_atom: name_atom}} <- props, do: {fnum, name_atom}
+
+    string_or_num_to_atom =
+      for {fnum, %{name: name, name_atom: name_atom}} <- props,
+          key <- [fnum, name],
+          do: {key, name_atom},
+          into: %{}
+
+    prefix =
+      module
+      |> Protobuf.Protoc.Generator.Util.mod_to_name()
+      |> Kernel.<>("_")
+      |> String.upcase()
+
+    is_prefixed? =
+      Enum.all?(props, fn {_, %{name: name}} -> String.starts_with?(name, prefix) end)
+
+    prefix_fun =
+      quote do
+        def prefix(), do: unquote(if is_prefixed?, do: prefix, else: "")
+      end
+
+    {atom_to_num, num_to_atom, string_or_num_to_atom, [prefix_fun]}
+  end
 
   defp def_extension_functions() do
     quote do

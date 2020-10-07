@@ -49,6 +49,7 @@ defmodule Protobuf.EnumOptionsProcessor do
     raise "Unknown Custom Enum Option: #{inspect(v)}"
   end
 
+  # cal_ stands for calculate
   def cal_prefix!(mod, fields, transformers) do
     if :deprefix in transformers do
       prefix =
@@ -133,7 +134,7 @@ defmodule Protobuf.EnumOptionsProcessor do
         {old_name_atom, new_name_atom}
       end)
 
-    accessor_funs =
+    lowercase_extra_accessor_funs =
       if :lowercase in transformers do
         Enum.map(original_to_transformed, fn {_, %{name_atom: tname_atom}} ->
           quote do
@@ -142,7 +143,10 @@ defmodule Protobuf.EnumOptionsProcessor do
         end)
       else
         []
-      end ++
+      end
+
+    accessor_funs =
+      lowercase_extra_accessor_funs ++
         [
           quote do
             def prefix(), do: unquote(prefix)
