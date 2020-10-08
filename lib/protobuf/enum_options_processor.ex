@@ -1,6 +1,9 @@
 defmodule Protobuf.EnumOptionsProcessor do
   @moduledoc """
   Defines hooks to process custom enum options.
+
+  Functions in this file are used at several stages of the protobuf lifecycle:
+  compilation from .proto to .pb.ex, encoding, and decoding
   """
 
   @typedoc """
@@ -134,6 +137,8 @@ defmodule Protobuf.EnumOptionsProcessor do
         {old_name_atom, new_name_atom}
       end)
 
+    # for the lowercase and atomize options, we want to make each enum option
+    # available as a module method e.g. MyEnum.foo_option()
     lowercase_extra_accessor_funs =
       if :lowercase in transformers do
         Enum.map(original_to_transformed, fn {_, %{name_atom: tname_atom}} ->
@@ -145,6 +150,8 @@ defmodule Protobuf.EnumOptionsProcessor do
         []
       end
 
+    # __transformation_mapping__ isn't strictly necessary, it's kind of a
+    # paper trail of what the brex enum option did for debugging
     accessor_funs =
       lowercase_extra_accessor_funs ++
         [

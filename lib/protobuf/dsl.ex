@@ -46,6 +46,10 @@ defmodule Protobuf.DSL do
     fields = Module.get_attribute(env.module, :fields)
     options = Module.get_attribute(env.module, :options)
 
+    # When you compile .proto files into .pb.ex files, there's a
+    # Brex-specific flag called "custom_field_options" that turns on or off
+    # Brex's custom option handling. At first it was only being used for
+    # field options, but now it's used for field, enum, and file options.
     custom_options = Keyword.get(options, :custom_field_options?)
 
     extension_props =
