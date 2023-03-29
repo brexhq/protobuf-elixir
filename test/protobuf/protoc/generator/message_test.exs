@@ -1,6 +1,7 @@
 defmodule Protobuf.Protoc.Generator.MessageTest do
   use ExUnit.Case, async: true
 
+  alias Brex.Demoscene.Extensions.DemosceneOptions
   alias Protobuf.Protoc.Context
   alias Protobuf.Protoc.Generator.Message, as: Generator
 
@@ -625,5 +626,34 @@ defmodule Protobuf.Protoc.Generator.MessageTest do
       assert msg =~ "defstruct [:the_field_name]\n"
       assert msg =~ "field :the_field_name, 1, required: true, type: :string\n"
     end
+  end
+
+  test "generate message_options" do
+    ctx = %Context{
+      package: "",
+      custom_field_options?: true
+    }
+
+    message_options = Google.Protobuf.MessageOptions.new()
+    demoscene_options = DemosceneOptions.new(test_behavior: :block)
+
+    options =
+      Google.Protobuf.MessageOptions.put_extension(
+        message_options,
+        Brex.Demoscene.Extensions.PbExtension,
+        :demoscene_options,
+        demoscene_options
+      )
+
+    desc =
+      Google.Protobuf.DescriptorProto.new(
+        name: "Foo",
+        options: options
+      )
+
+    {[], [msg]} = Generator.generate(ctx, desc)
+    assert msg =~ "defstruct []\n"
+    assert msg =~ "def message_options do\n"
+    assert msg =~ "[%{test_behavior: :block}]"
   end
 end

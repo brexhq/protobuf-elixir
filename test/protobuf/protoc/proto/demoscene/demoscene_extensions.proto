@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package brex.demoscene.extensions;
+import "google/protobuf/descriptor.proto";
+import "brex_elixirpb.proto";
+
+// Demoscene Extensions
+// Allows for clients to annotate their request messages with specification for how
+// their message should be handled in in 'test' data environment contexts (i.e. demo
+// and sandbox accounts).
+// For example:
+// message PaymentRailTransfer {
+//  option (brex.demoscene.extensions.demoscene_options).test_behavior = DATA_ENVIRONMENT_BEHAVIOR_BLOCK;
+// }
+
+enum DataEnvironmentBehavior {
+  option (brex.elixirpb.enum).atomize = true;
+  DATA_ENVIRONMENT_BEHAVIOR_INVALID = 0;
+  DATA_ENVIRONMENT_BEHAVIOR_BLOCK = 1;
+  DATA_ENVIRONMENT_BEHAVIOR_MOCK = 2;
+}
+
+message DemosceneOptions {
+  optional DataEnvironmentBehavior test_behavior = 1;
+}
+
+extend google.protobuf.MessageOptions {
+  optional DemosceneOptions demoscene_options = 90909;
+}

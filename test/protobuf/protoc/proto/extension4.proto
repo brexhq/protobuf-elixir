@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package ext;
+
+import "brex_elixirpb.proto";
+import "demoscene/demoscene_extensions.proto";
+import "google/protobuf/wrappers.proto";
+
+
+message TestBehaviorEventMessage {
+  option (brex.demoscene.extensions.demoscene_options).test_behavior = DATA_ENVIRONMENT_BEHAVIOR_BLOCK;
+  google.protobuf.DoubleValue f1 = 1 [(brex.elixirpb.field).extype="float"];
+  google.protobuf.DoubleValue f2 = 2 [(brex.elixirpb.field).extype="float"];
+}
+
+message NonTestBehaviorEventMessage {
+  map<string, string> args = 1;
+}
