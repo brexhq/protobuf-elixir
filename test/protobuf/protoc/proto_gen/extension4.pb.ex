@@ -6,6 +6,7 @@ defmodule Ext.TestBehaviorEventMessage do
           f1: float | nil,
           f2: float | nil
         }
+
   defstruct [:f1, :f2]
 
   def full_name do
@@ -29,6 +30,7 @@ defmodule Ext.NonTestBehaviorEventMessage.ArgsEntry do
           key: String.t(),
           value: String.t()
         }
+
   defstruct [:key, :value]
 
   def full_name do
@@ -46,6 +48,7 @@ defmodule Ext.NonTestBehaviorEventMessage do
   @type t :: %__MODULE__{
           args: %{String.t() => String.t()}
         }
+
   defstruct [:args]
 
   def full_name do

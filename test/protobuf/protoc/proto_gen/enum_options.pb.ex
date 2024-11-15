@@ -3,7 +3,6 @@ defmodule Ext.MyPetIs do
   use Protobuf, custom_field_options?: true, enum: true, syntax: :proto3
 
   option enum: :deprefix
-
   @type t :: integer | :A_CAT | :A_BIRD | :A_DOG | :A_UNKNOWN
 
   field :MY_PET_IS_A_CAT, 0
@@ -38,7 +37,6 @@ defmodule Ext.TrafficFlight do
   use Protobuf, custom_field_options?: true, enum: true, syntax: :proto3
 
   option enum: :atomize
-
   @type t :: integer | :color_invalid | :color_unset | :color_green | :color_yellow | :color_red
 
   field :TRAFFIC_FLIGHT_COLOR_INVALID, 0
@@ -58,6 +56,7 @@ defmodule Ext.EnumTestMessage do
           flight_color: Ext.TrafficFlight.t(),
           color: Ext.TrafficLightColor.t()
         }
+
   defstruct [:pet, :set, :flight_color, :color]
 
   def full_name do

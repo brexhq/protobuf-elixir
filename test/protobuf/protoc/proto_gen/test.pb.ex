@@ -47,6 +47,7 @@ defmodule My.Test.Request.SomeGroup do
   @type t :: %__MODULE__{
           group_field: integer
         }
+
   defstruct [:group_field]
 
   field :group_field, 9, optional: true, type: :int32
@@ -60,6 +61,7 @@ defmodule My.Test.Request.NameMappingEntry do
           key: integer,
           value: String.t()
         }
+
   defstruct [:key, :value]
 
   field :key, 1, optional: true, type: :int32
@@ -74,6 +76,7 @@ defmodule My.Test.Request.MsgMappingEntry do
           key: integer,
           value: My.Test.Reply.t() | nil
         }
+
   defstruct [:key, :value]
 
   field :key, 1, optional: true, type: :sint64
@@ -95,6 +98,7 @@ defmodule My.Test.Request do
           reset: integer,
           get_key: String.t()
         }
+
   defstruct [
     :key,
     :hue,
@@ -127,6 +131,7 @@ defmodule My.Test.Reply.Entry do
           value: integer,
           _my_field_name_2: integer
         }
+
   defstruct [:key_that_needs_1234camel_CasIng, :value, :_my_field_name_2]
 
   field :key_that_needs_1234camel_CasIng, 1, required: true, type: :int64
@@ -143,6 +148,7 @@ defmodule My.Test.Reply do
           compact_keys: [integer],
           __pb_extensions__: map
         }
+
   defstruct [:found, :compact_keys, :__pb_extensions__]
 
   field :found, 1, repeated: true, type: My.Test.Reply.Entry
@@ -159,6 +165,7 @@ defmodule My.Test.OtherBase do
           name: String.t(),
           __pb_extensions__: map
         }
+
   defstruct [:name, :__pb_extensions__]
 
   field :name, 1, optional: true, type: :string
@@ -169,8 +176,8 @@ end
 defmodule My.Test.ReplyExtensions do
   @moduledoc false
   use Protobuf, syntax: :proto2
-
   @type t :: %__MODULE__{}
+
   defstruct []
 end
 
@@ -181,6 +188,7 @@ defmodule My.Test.OtherReplyExtensions do
   @type t :: %__MODULE__{
           key: integer
         }
+
   defstruct [:key]
 
   field :key, 1, optional: true, type: :int32
@@ -189,8 +197,8 @@ end
 defmodule My.Test.OldReply do
   @moduledoc false
   use Protobuf, syntax: :proto2
-
   @type t :: %__MODULE__{__pb_extensions__: map}
+
   defstruct [:__pb_extensions__]
 
   extensions [{100, 2_147_483_647}]
@@ -203,6 +211,7 @@ defmodule My.Test.Communique.SomeGroup do
   @type t :: %__MODULE__{
           member: String.t()
         }
+
   defstruct [:member]
 
   field :member, 15, optional: true, type: :string
@@ -211,8 +220,8 @@ end
 defmodule My.Test.Communique.Delta do
   @moduledoc false
   use Protobuf, syntax: :proto2
-
   @type t :: %__MODULE__{}
+
   defstruct []
 end
 
@@ -224,6 +233,7 @@ defmodule My.Test.Communique do
           union: {atom, any},
           make_me_cry: boolean
         }
+
   defstruct [:union, :make_me_cry]
 
   oneof :union, 0
@@ -248,6 +258,7 @@ defmodule My.Test.Options do
   @type t :: %__MODULE__{
           opt1: String.t()
         }
+
   defstruct [:opt1]
 
   field :opt1, 1, optional: true, type: :string, deprecated: true
@@ -256,7 +267,6 @@ end
 defmodule My.Test.PbExtension do
   @moduledoc false
   use Protobuf, syntax: :proto2
-
   extend My.Test.Reply, :tag, 103, optional: true, type: :string
   extend My.Test.Reply, :donut, 106, optional: true, type: My.Test.OtherReplyExtensions
   extend My.Test.Reply, :"ReplyExtensions.time", 101, optional: true, type: :double

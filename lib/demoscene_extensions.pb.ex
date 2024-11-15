@@ -3,7 +3,6 @@ defmodule Brex.Demoscene.Extensions.DataEnvironmentBehavior do
   use Protobuf, custom_field_options?: true, enum: true, syntax: :proto2
 
   option enum: :atomize
-
   @type t :: integer | :invalid | :block | :mock
 
   field :DATA_ENVIRONMENT_BEHAVIOR_INVALID, 0
@@ -18,6 +17,7 @@ defmodule Brex.Demoscene.Extensions.DemosceneOptions do
   @type t :: %__MODULE__{
           test_behavior: Brex.Demoscene.Extensions.DataEnvironmentBehavior.t()
         }
+
   defstruct [:test_behavior]
 
   def full_name do

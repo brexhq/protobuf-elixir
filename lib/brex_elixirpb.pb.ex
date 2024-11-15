@@ -6,6 +6,7 @@ defmodule Brex.Elixirpb.FieldOptions do
           extype: String.t(),
           enum: String.t()
         }
+
   defstruct [:extype, :enum]
 
   field :extype, 1, optional: true, type: :string
@@ -21,6 +22,7 @@ defmodule Brex.Elixirpb.EnumOptions do
           lowercase: boolean,
           deprefix: boolean
         }
+
   defstruct [:atomize, :lowercase, :deprefix]
 
   field :atomize, 1, optional: true, type: :bool

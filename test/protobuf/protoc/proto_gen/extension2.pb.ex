@@ -24,6 +24,7 @@ defmodule Ext.Nested do
   @type t :: %__MODULE__{
           my_timestamp: {atom, any}
         }
+
   defstruct [:my_timestamp]
 
   def full_name do
@@ -64,6 +65,7 @@ defmodule Ext.MyMessage do
           color_repeated_normal: [[Ext.TrafficLightColor.t()]],
           normal3: [String.t()]
         }
+
   defstruct [
     :enums_oneof,
     :f1,
