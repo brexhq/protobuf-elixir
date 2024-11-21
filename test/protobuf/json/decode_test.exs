@@ -387,7 +387,7 @@ defmodule Protobuf.JSON.DecodeTest do
       assert decode(data, Maps) == error(msg)
 
       data = %{"mapsi" => %{'chars' => 1}}
-      msg = "Field 'mapsi' has an invalid map key (string: 'chars')"
+      msg = "Field 'mapsi' has an invalid map key (string: ~c\"chars\")"
       assert decode(data, Maps) == error(msg)
     end
 
